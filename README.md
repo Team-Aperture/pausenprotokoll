@@ -88,6 +88,38 @@ würde der Oberfläche weiterhin 1440 px zusprechen, während sie tatsächlich
 
 ---
 
+## Zieldaten
+
+Am Ende des Abspanns stehen die Koordinaten, wie im Rest der Reihe: sichtbar,
+zum Kopieren antippbar, und im Repository bewusst als Platzhalter
+(`N 00° 00.000 · E 000° 00.000`) — erkennbar keine echte Position, damit
+niemand versehentlich losfährt. Der Block ist in `js/results.js` mit
+`▼▼▼ ECHTE CACHE-KOORDINATEN HIER EINTRAGEN ▼▼▼` markiert.
+
+---
+
+## Der Netzschalter
+
+Das kleine grüne Lämpchen auf dem Schild unter dem Monitor ist ein echter
+Schalter. **Gedrückt halten**, und der Bildschirm geht aus.
+
+Die Anlage verbucht das als Abbruch des Protokolls. Es ist gleichzeitig die
+einzige vollständig richtige Antwort, die ihr das ganze Spiel über jemand
+gegeben hat: Eine Pause ist ein Zeitraum, in dem man nicht erreichbar ist,
+und das Testsubjekt hat sich soeben unerreichbar gemacht. Also: **Rang S —
+BITTE NICHT STÖREN**.
+
+Und **keine Koordinaten.** Das Protokoll wurde tatsächlich nie abgeschlossen,
+und die Anlage ist nicht sentimental. Sie hält das für fair.
+
+Gedrückt halten statt klicken, aus demselben Grund, aus dem echte Monitore
+das so machen: Einen Durchlauf durch Streifen eines 6-px-Lämpchens zu beenden
+wäre ein Fehler, kein Easter Egg. Auch per Tastatur (Enter/Leertaste halten).
+Die Auswertung wandert dabei aus dem Monitor **in den Raum** — dort ist als
+Einziges noch Licht an.
+
+---
+
 ## Musik
 
 Ein Loop, durch den Web-Audio-Graph geführt, damit er geformt statt nur
@@ -239,8 +271,8 @@ Auf dem Telefon gilt zusätzlich eine gemessene Zusage: **jede Schaltfläche ein
 noch offenen Meldung ist ohne Scrollen erreichbar.** Dafür sind gleichzeitig
 höchstens zwei Meldungen offen, erledigte Karten klappen auf ihre Bewertung
 zusammen, und die Regelkarte zeigt ihre tragende Zeile. Über eine vollständige
-Sitzung auf 360×640 und 360×740 liegt die tiefste Schaltflächenkante bei 604 px
-bzw. 663 px — keine einzige unter dem Falz. Auf dem Telefon schrumpft der
+Sitzung auf 360×640 und 360×740 liegt die tiefste Schaltflächenkante bei 627 px
+bzw. 656 px — keine einzige unter dem Falz. Auf dem Telefon schrumpft der
 Kantinenrahmen dafür auf 4 px: Die Spielfläche geht vor.
 
 Die Reihenfolge der Meldungen wird dabei **nie** zugunsten echter Codes
@@ -289,7 +321,8 @@ js/
   dialogue.js     R-3MI / V-TGM / SYSTEM, animierte Gesichter, Untertitel
   events.js       Meldungsdaten, Rundenskripte, Fairness-Prüfung
   game.js         Rundenlauf, Bewertung, die zehn Sekunden
-  results.js      Auswertung, Rang, Auszeichnungen, Abspann
+  power.js        der Netzschalter am Monitor
+  results.js      Auswertung, Rang, Auszeichnungen, Abspann, Zieldaten
   app.js          Menü und Verdrahtung
 ```
 

@@ -101,6 +101,22 @@
     });
   }
 
+  /* Keep --screen-inset in step with the monitor. */
+  function publishScreenInset() {
+    const screen = document.getElementById('deckScreen');
+    if (!screen) return;
+    const apply = () => {
+      const r = screen.getBoundingClientRect();
+      if (!r.width) return;
+      const inset = `${Math.round(r.top)}px ${Math.round(window.innerWidth - r.right)}px `
+                  + `${Math.round(window.innerHeight - r.bottom)}px ${Math.round(r.left)}px`;
+      document.documentElement.style.setProperty('--screen-inset', inset);
+    };
+    apply();
+    try { new ResizeObserver(apply).observe(screen); } catch (_) {}
+    window.addEventListener('resize', apply);
+  }
+
   /* ═══ INIT ══════════════════════════════════════════════════════ */
   function init() {
     PPState.load();
@@ -125,7 +141,18 @@
     document.getElementById('briefBtn').addEventListener('click', openBriefing);
     document.getElementById('briefClose').addEventListener('click', closeOverlay);
     document.getElementById('overlayBackdrop').addEventListener('click', closeOverlay);
-    document.getElementById('endSkip').addEventListener('click', () => PPResults.skipEnding());
+    document.getElementById('endSkip').addEventListener('click', () => {
+      PPResults.skipEnding(PPGame.stateFor().stats?.poweredOff);
+    });
+
+    // The little green lamp on the monitor's plate is a switch.
+    PPPower.init(() => PPGame.poweredOff());
+
+    // The results and the ending live outside the monitor but should
+    // look like they are on it, so they are clipped to its measured
+    // rectangle. Measured rather than guessed: the housing is sized in
+    // vmin and clamps, so nothing else would stay aligned.
+    publishScreenInset();
 
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && !document.getElementById('briefing').classList.contains('hidden')) closeOverlay();
@@ -146,6 +173,7 @@
       document.getElementById('feedIdle').classList.remove('hidden');
       document.getElementById('ruleCard').classList.add('hidden');
       document.getElementById('ruleSocial').classList.add('hidden');
+      PPPower.reset();                 // the monitor comes back on
 
       if (kind === 'again') {
         // Straight back into the chair — no second trip across the room.

@@ -483,13 +483,90 @@
   color: #7d6b56;
   text-transform: uppercase;
 }
+/* ─── THE POWER SWITCH ───────────────────────────────────────
+   The little green light is a button. Holding it turns the monitor
+   off, which the facility considers a catastrophic failure to
+   complete the protocol and everyone else considers a break.
+
+   Built like every other control here: the hit target is a fixed
+   22px square that never moves, and only the ring and the lamp
+   inside it react. */
+.dp-power {
+  position: relative;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: 0; padding: 0;
+  cursor: pointer; touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
 .deck-plate .dp-led {
   width: 6px; height: 6px; border-radius: 50%;
   background: var(--accent-r3mi);
   box-shadow: 0 0 7px var(--accent-r3mi);
   animation: deckLed 3.4s ease-in-out infinite;
+  transition: background var(--t-fast), box-shadow var(--t-fast);
 }
 @keyframes deckLed { 0%,100% { opacity: .45; } 50% { opacity: 1; } }
+
+/* the ring that fills while the switch is held */
+.dp-ring {
+  position: absolute; inset: 2px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  transition: border-color var(--t-fast);
+}
+.dp-power:hover .dp-ring,
+.dp-power:focus-visible .dp-ring { border-color: var(--accent-r3mi); }
+.dp-power:focus-visible { outline: none; }
+.dp-power:focus-visible .dp-ring { box-shadow: 0 0 0 2px var(--accent-r3mi); }
+.dp-power.holding .dp-ring {
+  border-color: var(--text-error);
+  background: conic-gradient(var(--text-error) var(--hold, 0turn), transparent 0);
+  -webkit-mask: radial-gradient(circle, transparent 55%, #000 58%);
+          mask: radial-gradient(circle, transparent 55%, #000 58%);
+}
+.dp-power.holding .dp-led {
+  background: var(--text-error);
+  box-shadow: 0 0 9px var(--text-error);
+  animation: none;
+}
+
+/* ─── MONITOR OFF ────────────────────────────────────────────
+   A CRT collapsing: the picture squeezes to a bright line, then a
+   point, then nothing. The housing stays — you are still sitting
+   in front of it, it just has nothing to say any more. */
+.deck-screen.powering-off { animation: crtOff 0.75s cubic-bezier(0.6,0,0.9,0.2) forwards; }
+@keyframes crtOff {
+  0%   { transform: translateZ(0) scale(1, 1);        filter: brightness(1); }
+  42%  { transform: translateZ(0) scale(1, 0.012);    filter: brightness(3.4); }
+  70%  { transform: translateZ(0) scale(0.36, 0.008); filter: brightness(3); }
+  100% { transform: translateZ(0) scale(0, 0);        filter: brightness(0); }
+}
+.deck-screen.off { background: #0a0705; }
+.deck-screen.off > *:not(.deck-dark) { display: none; }
+
+/* what is left once the picture has gone: the room, reflected */
+.deck-dark {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(158deg, rgba(255,220,175,0.05) 0%, transparent 30%,
+                    transparent 72%, rgba(255,200,150,0.03) 100%),
+    #0a0705;
+}
+/* Once it is off it stops offering. A disabled button still matches
+   :hover in CSS, so the ring has to be switched off explicitly. */
+.dp-power:disabled { cursor: default; }
+.dp-power:disabled .dp-ring { border-color: transparent; box-shadow: none; background: none; }
+
+.deck.screen-off .deck-plate .dp-led {
+  background: var(--text-dim);
+  box-shadow: none;
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deck-screen.powering-off { animation: none; opacity: 0; }
+}
 
 /* ═══ THE DESK BAND ═════════════════════════════════════════════
    Where there is room, a strip of cafeteria is kept clear beneath the
@@ -508,8 +585,30 @@
 /* The strip belongs to the room, so it clears the monitor and gets a
    little warmth under it — but the box itself stays facility issue,
    because that is how the series writes these two talking. */
+/* Stacking, top level: the briefing is a modal and outranks everything;
+   the dialogue outranks every full-screen layer the game draws inside
+   the monitor, which is what stopped it hiding behind the finale. */
+.overlay-backdrop { z-index: 960; }
+.overlay-panel    { z-index: 961; }
+
+/* The results and the ending sit above the room but BELOW the units,
+   so R-3MI and V-TGM keep commenting over their own verdict. Both are
+   clipped to the monitor's measured rectangle so they still read as
+   being on the screen. */
+.results { z-index: 930; inset: var(--screen-inset, 0); }
+.ending  { z-index: 940; inset: var(--screen-inset, 0); }
+/* Monitor off: the assessment moves into the room — and lets the room
+   show through, because that is the whole point of having switched the
+   thing off. Warm, not the facility's cold black. */
+.results.in-room, .ending.in-room {
+  inset: 0;
+  background: rgba(11,7,5,0.86);
+  backdrop-filter: blur(3px);
+}
+#endSkip { z-index: 941; }
+
 .dlg-container {
-  z-index: 950;                 /* above every full-screen layer the game draws */
+  z-index: 950;
   padding-bottom: calc(var(--sp-md) + env(safe-area-inset-bottom, 0px));
 }
 .dlg-container .dlg-box {
