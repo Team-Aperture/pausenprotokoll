@@ -20,7 +20,14 @@ Lichtkegeln, eine Kaffeemaschine, ein Regal mit Tassen, eine Pflanze, die
 mehrere Protokolle überlebt hat. Auf einem Seitentisch steht ein Terminal
 und läuft.
 
-Auf **[ PAUSE BEGINNEN ]** fliegt die Kamera hinein. Während des Anflugs
+Auf **[ PAUSE BEGINNEN ]** erklärt erst einmal jemand, warum überhaupt
+Pause ist: Die Anlage meldet den Arbeitszyklus als beendet, V-TGM weiß, was
+eine Pause ist, und R-3MI kommt nicht darüber hinweg, dass ein geplanter
+Vorgang keinen Inhalt haben soll. Sieben Zeilen, rund vierzehn Sekunden —
+der Witz ist, dass eine Pause kurz ist und die Anlage sie lang gemacht hat;
+das Intro darf das nicht auch tun.
+
+Danach fliegt die Kamera hinein. Während des Anflugs
 startet das BIOS **auf dem kleinen Bildschirm**, sodass die Anlage bereits
 wach ist, wenn man ankommt. Am Ende der Fahrt übernimmt der echte,
 ungescalte Monitor per Überblendung — das Spiel selbst wird nie skaliert
@@ -30,12 +37,28 @@ Danach läuft das Spiel **im Monitor**, mit der Kantine ringsum: warme Wand,
 die Holzplatte des Tisches, das kalte Schirmlicht, das darauf zurückfällt.
 Man verlässt den Raum nie ganz.
 
-Die beiden Paletten werden streng getrennt gehalten:
+Die Glasscheibe selbst ist warm und sehr dunkel (`--screen-bg`), deutlich
+abgesetzt vom helleren Gehäuse — sie gehört zu einer Kantine, nicht zu einem
+Serverraum. Alles, was die Anlage *darauf* zeichnet, bleibt kaltes
+KA-II-Grau, und genau dieser Kontrast macht die Arbeit:
 
 | | Palette | Wo |
 |---|---|---|
-| **Die Kantine** | `--caf-*`, warm und braun | nur **außerhalb** des Bildschirms |
-| **Die Anlage** | KA-II-Tokens, kalt und grau | nur **innerhalb** des Bildschirms |
+| **Die Kantine** | `--caf-*`, warm und braun | der Raum, das Gehäuse, die Scheibe |
+| **Die Anlage** | KA-II-Tokens, kalt und grau | alles, was auf der Scheibe steht |
+
+**R-3MI und V-TGM sitzen im Raum, nicht im Monitor.** Die Dialogleiste steht
+auf dem Tisch davor — die beiden schauen auf den Bildschirm, sie waren nie
+darin. Wo Platz ist, wird unter dem Monitor ein Streifen Kantine dafür frei
+gehalten; auf kleineren Fenstern legt sich die Leiste über den unteren Rand
+der Scheibe, und `dialogue.js` misst die tatsächliche Überlappung. Gemessen
+wird dabei die **Ruheposition** der Leiste, nicht ihre aktuelle: Sie fährt
+über 0,4 s ein, und live gemessen meldete sie während der ganzen Fahrt
+„keine Überlappung", während sie die Meldungen bereits verdeckte.
+
+Dass die beiden draußen stehen, hat sie nebenbei über *jede* Vollbildebene
+gehoben, die das Spiel zeichnet — deshalb verschwinden sie nicht mehr hinter
+der 10-Sekunden-Prüfung, der Auswertung und dem Abspann.
 
 Das ist der ganze Witz in Farbe: Man sitzt in einer gemütlichen Kantine und
 starrt auf ein Gerät, das die Gemütlichkeit für einen Messvorgang hält.
@@ -49,7 +72,39 @@ sodass Dialogleiste, Überlagerungen und Finale **im Monitor** bleiben,
 statt über die ganze Kantine auszubrechen.
 
 Bei `prefers-reduced-motion` entfallen Fahrt und Anflug: Der Raum steht
-still, und **[ PAUSE BEGINNEN ]** schneidet direkt ins Terminal.
+still, das Intro läuft gekürzt, und danach wird direkt ins Terminal
+geschnitten.
+
+### Breakpoints: zweierlei
+
+Das Spiel wohnt nicht mehr im Fenster, sondern auf einem Monitor, der
+deutlich kleiner ist als das Fenster um ihn herum. Eine `@media`-Abfrage
+würde der Oberfläche weiterhin 1440 px zusprechen, während sie tatsächlich
+900 hat. Deshalb:
+
+* `@container screen` — die Oberfläche **im** Monitor, misst sich an dessen
+  eigener Breite
+* `@media` — der Raum: Menü, Gehäuse, Sitzabstand und die Dialogleiste
+
+---
+
+## Musik
+
+Ein Loop, durch den Web-Audio-Graph geführt, damit er geformt statt nur
+lauter und leiser gemacht werden kann:
+
+* **Gedämpft** im Menü (Tiefpass bei 380 Hz) — der Track klingt, als käme er
+  durch die Kantinenwand. Beim Start der Pause öffnet der Filter auf 16 kHz,
+  und der Raum öffnet sich mit.
+* **Duckt** automatisch unter Dialog. Die Piepser von R-3MI und V-TGM sind
+  absichtlich leise; statt sie lauter zu drehen — was sie nörgelig machen
+  würde — geht die Musik aus dem Weg, solange jemand spricht. Die Stimmen
+  selbst wurden zusätzlich leicht angehoben.
+* **Verstummt** für die Abschlusskalibrierung. Der Brief ist da eindeutig:
+  Stille ist dort Spielmechanik. Der Track verschwindet ganz und kommt zur
+  Auswertung zurück.
+
+Der Tonschalter besitzt alles — Musik, SFX und Brummen.
 
 ---
 
@@ -95,7 +150,7 @@ und der Versuch läuft weiter. Jeder Durchlauf erreicht das Ende.
 
 ### Ablauf
 
-Kantine → Anflug → sieben Runden (Eingewöhnung, Grundrauschen, Wartungscodes,
+Kantine → Intro → Anflug → sieben Runden (Eingewöhnung, Grundrauschen, Wartungscodes,
 Kollegiale Störung, Darstellungstest, Zielkonflikt, Pausenstress) →
 Abschlusskalibrierung → Auswertung → Abspann.
 
@@ -184,8 +239,8 @@ Auf dem Telefon gilt zusätzlich eine gemessene Zusage: **jede Schaltfläche ein
 noch offenen Meldung ist ohne Scrollen erreichbar.** Dafür sind gleichzeitig
 höchstens zwei Meldungen offen, erledigte Karten klappen auf ihre Bewertung
 zusammen, und die Regelkarte zeigt ihre tragende Zeile. Über eine vollständige
-Sitzung auf 360×640 und 360×740 liegt die tiefste Schaltflächenkante bei 607 px
-bzw. 644 px — keine einzige unter dem Falz. Auf dem Telefon schrumpft der
+Sitzung auf 360×640 und 360×740 liegt die tiefste Schaltflächenkante bei 604 px
+bzw. 663 px — keine einzige unter dem Falz. Auf dem Telefon schrumpft der
 Kantinenrahmen dafür auf 4 px: Die Spielfläche geht vor.
 
 Die Reihenfolge der Meldungen wird dabei **nie** zugunsten echter Codes
@@ -218,6 +273,7 @@ index.html
 favicon.svg
 assets/
   logo.png/.webp  das Logo, freigestellt
+  music/          der Loop
 css/
   base.css        Tokens, Reset, Schaltflächensystem (stabile Hitboxen)
   cafeteria.css   Kantine, Kamerafahrt, Anflug, Monitorrahmen
@@ -226,6 +282,7 @@ css/
   responsive.css  Breakpoints und Reduced Motion
 js/
   audio.js        prozedurales Web Audio, Brumm, KLONK
+  music.js        Loop, Dämpfung, Ducking, Stille
   boot.js         das BIOS — läuft im Monitor und in voller Größe
   cafeteria.js    Kamerafahrt und Anflug
   state.js        Einstellungen, kleiner Wiederaufnahmepunkt, Auszeichnungen

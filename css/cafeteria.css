@@ -30,6 +30,18 @@
   --caf-text:   #d8c3a0;
   --caf-dim:    #a08a68;
   --caf-muted:  #8d7a5e;
+
+  /* The monitor's own glass. Warm and very dark: it belongs to a
+     cafeteria, not to a server room, but it still has to read as a
+     screen against the lit brown housing around it. Everything the
+     facility draws ON it stays cold KA-II grey, which is what keeps
+     the contrast doing its job. */
+  --screen-bg:  #150f0a;
+  --screen-bg2: #1d150e;
+
+  /* How far back the player is sitting. */
+  --room-gap:   clamp(14px, 7vmin, 96px);
+  --desk-band:  0px;
 }
 
 /* ═══ THE CAMERA ════════════════════════════════════════════════
@@ -195,9 +207,9 @@
   container-type: size;
   position: absolute;
   left: 8.5%; top: 7%; width: 83%; height: 63%;
-  background: var(--bg-deep);
+  background: var(--screen-bg);
   overflow: hidden;
-  box-shadow: inset 0 0 24px rgba(0,0,0,0.9), 0 0 34px rgba(120,200,255,0.10);
+  box-shadow: inset 0 0 24px rgba(0,0,0,0.9), 0 0 34px rgba(255,190,120,0.12);
 }
 /* what is on the screen while nobody is using it */
 .caf-term-idle {
@@ -207,7 +219,7 @@
   gap: 6%;
   background:
     repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,0,0,0.25) 2px 4px),
-    linear-gradient(180deg, #071018, #04080c);
+    linear-gradient(180deg, #1d150e, #150f0a);
 }
 .caf-term-idle span {
   font-family: var(--font-mono);
@@ -228,7 +240,7 @@
 .caf-term-boot {
   position: absolute; inset: 0;
   padding: 4% 5%;
-  background: linear-gradient(180deg, #050a0e, #04080c);
+  background: linear-gradient(180deg, #1a130c, #150f0a);
   overflow: hidden;
   opacity: 0;
   transition: opacity .5s ease;
@@ -347,7 +359,12 @@
   position: fixed; inset: 0;
   z-index: 4;
   display: flex; align-items: center; justify-content: center;
-  padding: clamp(12px, 4.2vmin, 62px);
+  /* Sitting back from the desk. The monitor is deliberately NOT
+     filling the window: the point of the frame is that you can still
+     see the cafeteria you are supposedly relaxing in. The desk band
+     underneath is where the units talk. */
+  padding: var(--room-gap);
+  padding-bottom: calc(var(--room-gap) + var(--desk-band));
   background: var(--caf-deep);
   opacity: 0;
   /* Hidden means hidden: while the menu is up, the terminal's own
@@ -404,7 +421,7 @@
 .deck-bezel {
   position: relative;
   width: 100%; height: 100%;
-  max-width: 1320px;
+  max-width: 1140px;
   display: flex; flex-direction: column;
   padding: clamp(8px, 1.9vmin, 22px);
   background: linear-gradient(160deg, #5c5044 0%, #37301f 42%, #26201a 100%);
@@ -434,9 +451,16 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
-  background: var(--bg-deep);
+  background: radial-gradient(ellipse 90% 80% at 50% 34%, var(--screen-bg2), var(--screen-bg) 72%);
+  /* Two jobs. It is the containing block for the game's fixed layers,
+     so nothing escapes the monitor — and it is the query container the
+     game lays itself out against, so the interface responds to the
+     SCREEN it lives on rather than to the browser window it can no
+     longer see all of. */
   transform: translateZ(0);
-  box-shadow: inset 0 0 40px rgba(0,0,0,0.9);
+  container-type: inline-size;
+  container-name: screen;
+  box-shadow: inset 0 0 46px rgba(0,0,0,0.85);
 }
 /* glass: a faint reflection of the room on the panel */
 .deck-screen::after {
@@ -466,6 +490,32 @@
   animation: deckLed 3.4s ease-in-out infinite;
 }
 @keyframes deckLed { 0%,100% { opacity: .45; } 50% { opacity: 1; } }
+
+/* ═══ THE DESK BAND ═════════════════════════════════════════════
+   Where there is room, a strip of cafeteria is kept clear beneath the
+   monitor and the units' dialogue sits on it — they are at the table
+   looking at the screen. Below that, the window is too small to give
+   anything away and the strip lies over the bottom of the monitor
+   instead; dialogue.js measures the actual overlap either way.
+   ═══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) and (min-height: 620px) {
+  :root { --desk-band: 172px; }
+}
+@media (min-width: 700px) and (min-height: 820px) {
+  :root { --desk-band: 190px; }
+}
+
+/* The strip belongs to the room, so it clears the monitor and gets a
+   little warmth under it — but the box itself stays facility issue,
+   because that is how the series writes these two talking. */
+.dlg-container {
+  z-index: 950;                 /* above every full-screen layer the game draws */
+  padding-bottom: calc(var(--sp-md) + env(safe-area-inset-bottom, 0px));
+}
+.dlg-container .dlg-box {
+  border-bottom: 1px solid var(--bdr-mid);
+  box-shadow: 0 -6px 34px rgba(0,0,0,0.6), 0 0 44px rgba(255,170,80,0.05);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .caf-lamp-unit.flicker .caf-lamp-bulb,

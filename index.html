@@ -328,22 +328,6 @@
 
 
       <!-- ════════════════════════════════════════════════════════════
-           DIALOGUE STRIP
-           ════════════════════════════════════════════════════════════ -->
-      <div class="dlg-container" id="dlgContainer">
-        <div class="dlg-box" id="dlgBox">
-          <div class="dlg-portrait" id="dlgPortrait" aria-hidden="true"></div>
-          <div class="dlg-body">
-            <div class="dlg-speaker" id="dlgSpeaker"></div>
-            <div class="dlg-text" id="dlgText"></div>
-            <div class="dlg-sub" id="dlgSub"></div>
-            <button class="ka-btn small dlg-advance hidden" id="dlgNext" type="button"
-                    style="align-self:flex-end">[ WEITER ]</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ════════════════════════════════════════════════════════════
            BRIEFING
            ════════════════════════════════════════════════════════════ -->
       <div class="overlay-backdrop hidden" id="overlayBackdrop"></div>
@@ -386,8 +370,31 @@
     </div><!-- /.deck-bezel -->
   </div><!-- /.deck -->
 
+  <!-- ════════════════════════════════════════════════════════════
+       DIALOGUE — in the room, not in the monitor.
+       R-3MI and V-TGM are sitting in the cafeteria looking AT the
+       screen; they were never inside it. Living out here also puts
+       them above every full-screen layer the game draws, which is
+       what stopped them disappearing behind the final calibration,
+       the results sheet and the ending.
+       ════════════════════════════════════════════════════════════ -->
+  <div class="dlg-container" id="dlgContainer">
+    <div class="dlg-box" id="dlgBox">
+      <div class="dlg-portrait" id="dlgPortrait" aria-hidden="true"></div>
+      <div class="dlg-body">
+        <div class="dlg-speaker" id="dlgSpeaker"></div>
+        <div class="dlg-text" id="dlgText"></div>
+        <div class="dlg-sub" id="dlgSub"></div>
+        <button class="ka-btn small dlg-advance hidden" id="dlgNext" type="button"
+                style="align-self:flex-end">[ WEITER ]</button>
+      </div>
+    </div>
+  </div>
+
+
   <!-- ── SCRIPTS ─────────────────────────────────────────────── -->
   <script src="js/audio.js"></script>
+  <script src="js/music.js"></script>
   <script src="js/boot.js"></script>
   <script src="js/state.js"></script>
   <script src="js/dialogue.js"></script>

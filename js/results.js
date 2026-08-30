@@ -125,6 +125,7 @@ const PPResults = (() => {
     `;
 
     view.classList.remove('hidden');
+    PPMusic.hush(false, 2.0);       // and back in for the verdict
     document.getElementById('resContinue').addEventListener('click', () => {
       view.classList.add('hidden');
       ending(stats, rank);

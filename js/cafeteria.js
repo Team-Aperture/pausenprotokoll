@@ -102,6 +102,42 @@ const PPCafeteria = (() => {
     driftRaf = null;
   }
 
+  /* ─── THE INTRO ───────────────────────────────────────────────
+     Why any of this is happening. The facility has found a rule that
+     says a break is due; V-TGM knows what one is; R-3MI cannot get
+     past the idea that a scheduled activity must have some content.
+     It plays over the drifting room with the menu gone, so the first
+     thing the player does in this game is exactly what the game is
+     about: nothing.
+
+     Kept to eight lines. The joke is that a break is short and the
+     facility has made it long — the intro must not make that true of
+     itself. */
+  const INTRO = [
+    { speaker: 'SYSTEM', text: 'ARBEITSZYKLUS 4471 ABGESCHLOSSEN. PAUSE VORGESEHEN.' },
+    { speaker: 'R-3MI',  text: '„Eine was?"' },
+    { speaker: 'V-TGM',  text: 'A break. Fifteen minutes of not working.', sub: 'Eine Pause. Fünfzehn Minuten nicht arbeiten.' },
+    { speaker: 'R-3MI',  text: '„Und was mache ich stattdessen?"' },
+    { speaker: 'V-TGM',  text: 'Nothing. That is the whole thing.', sub: 'Nichts. Das ist alles.' },
+    { speaker: 'R-3MI',  text: '„Gut. Dann brauche ich dafür ein Protokoll."' },
+    { speaker: 'V-TGM',  text: 'Remi. The protocol is the nothing.', sub: 'Remi. Das Protokoll IST das Nichts.' },
+  ];
+
+  function playIntro(onDone) {
+    el.menu.classList.add('leaving');
+    // The room opens up the moment the break is declared.
+    try { PPMusic.setMuffled(false, 2.2); } catch (_) {}
+
+    // Paced deliberately quick. The joke is that a break is short and
+    // the facility has made it long; the intro must not make that true
+    // of itself. Seven lines, about thirteen seconds.
+    if (reduced()) {                       // straight to the point
+      PPDialogue.say(INTRO.slice(0, 5), { auto: true, pace: 0.45, speed: 0, onDone });
+      return;
+    }
+    PPDialogue.say(INTRO, { auto: true, pace: 0.5, speed: 18, onDone });
+  }
+
   /* ─── THE PUSH-IN ─────────────────────────────────────────────
      Solve for the camera that puts the terminal screen in the middle
      of the viewport at `fill` times its width. With transform-origin
@@ -112,14 +148,12 @@ const PPCafeteria = (() => {
     const done = () => { finish(onArrived); };
 
     if (reduced()) {                        // no flight: cut straight in
-      el.menu.classList.add('leaving');
       showBoot();
       setTimeout(done, 700);
       return;
     }
 
     stopDrift();
-    el.menu.classList.add('leaving');
     el.stage.classList.add('approaching');
 
     const r  = el.term.getBoundingClientRect();
@@ -175,7 +209,7 @@ const PPCafeteria = (() => {
     startDrift();
   }
 
-  return { init, startDrift, stopDrift, approach, reset };
+  return { init, startDrift, stopDrift, playIntro, approach, reset, INTRO };
 })();
 
 if (typeof window !== 'undefined') window.PPCafeteria = PPCafeteria;

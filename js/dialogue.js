@@ -64,6 +64,7 @@ const PPDialogue = (() => {
   let el = {}, queue = [], index = -1;
   let typing = false, typeTimer = null, autoTimer = null;
   let onComplete = null, autoMode = true;
+  let pace = 1, typeSpeed = 26;
   let sizeObserver = null;
 
   function reduced() {
@@ -92,14 +93,34 @@ const PPDialogue = (() => {
     watchSize();
   }
 
-  /* The strip is fixed to the bottom edge. Everything that scrolls
-     underneath reserves exactly its measured height so no message and
-     no button can end up trapped behind it. */
+  /* The strip sits in the cafeteria now, on the desk in front of the
+     monitor — the units are looking AT the screen, not trapped inside
+     it. Where there is room for it below the monitor it overlaps
+     nothing and the game needs no padding at all.
+
+     On a phone the monitor fills the window and the strip has to lie
+     over the bottom of it, so the amount actually overlapping the
+     screen is measured and published; the feed reserves exactly that
+     and not a pixel more. */
   function syncSpace() {
     try {
       const up = !!(el.container && el.container.classList.contains('visible'));
-      const h = up ? Math.ceil(el.container.getBoundingClientRect().height) : 0;
-      document.documentElement.style.setProperty('--dlg-h', h + 'px');
+      let overlap = 0;
+      if (up) {
+        // Measure where the strip COMES TO REST, not where it is right
+        // now. It slides up over 0.4s, and getBoundingClientRect()
+        // follows that transform — so measuring live reported "no
+        // overlap" for the whole slide and the feed briefly reserved
+        // nothing while the strip was already covering it. offsetHeight
+        // ignores transforms, so the settled position is exact from the
+        // first frame.
+        const h = el.container.offsetHeight;
+        const restingTop = window.innerHeight - h;
+        const screen = document.getElementById('deckScreen');
+        const s = screen ? screen.getBoundingClientRect() : { bottom: window.innerHeight };
+        overlap = Math.max(0, Math.ceil(s.bottom - restingTop));
+      }
+      document.documentElement.style.setProperty('--dlg-h', overlap + 'px');
     } catch (_) {}
   }
   function watchSize() {
@@ -116,6 +137,9 @@ const PPDialogue = (() => {
    *   lines: [{ speaker, text, sub }]
    *   opts.auto     — true (default): each line advances itself and the
    *                   round keeps running. false: waits for [ WEITER ].
+   *   opts.pace     — multiplier on how long a finished line is held.
+   *                   Below 1 for a scene that has somewhere to be.
+   *   opts.speed    — ms per character while typing.
    *   opts.onDone   — called once the last line is finished.
    */
   function say(lines, opts) {
@@ -124,6 +148,8 @@ const PPDialogue = (() => {
     queue = (lines || []).filter(Boolean);
     index = -1;
     autoMode = opts.auto !== false;
+    pace = opts.pace || 1;
+    typeSpeed = opts.speed || 26;
     onComplete = opts.onDone || null;
     el.next.classList.toggle('hidden', autoMode);
     advance();
@@ -161,6 +187,7 @@ const PPDialogue = (() => {
     el.container.classList.add('visible');
     el.portrait.classList.add('speaking');
     syncSpace();
+    try { PPMusic.duck(true); } catch (_) {}
 
     typeText(line.text || '', line.speaker, () => {
       el.portrait.classList.remove('speaking');
@@ -169,7 +196,7 @@ const PPDialogue = (() => {
         // Long enough to read, short enough that the facility does not
         // feel like it is waiting for permission.
         const ms = Math.max(2200, 850 + (line.text || '').length * 45 + (line.sub ? 600 : 0));
-        autoTimer = setTimeout(() => { autoTimer = null; advance(); }, ms);
+        autoTimer = setTimeout(() => { autoTimer = null; advance(); }, ms * pace);
       }
     });
   }
@@ -194,7 +221,7 @@ const PPDialogue = (() => {
         typing = false;
         done();
       }
-    }, 26);
+    }, typeSpeed);
   }
 
   function finishTyping() {
@@ -215,6 +242,7 @@ const PPDialogue = (() => {
     el.container?.classList.remove('visible');
     el.portrait?.classList.remove('speaking');
     syncSpace();
+    try { PPMusic.duck(false); } catch (_) {}
   }
 
   /* Used when the facility wants real silence (the final calibration). */

@@ -9,52 +9,43 @@
    hand, and nothing in it needs a large screen.
    ═══════════════════════════════════════════════════════════════ */
 
-/* ─── TABLET / SMALL LAPTOP ──────────────────────────────────── */
-@media (max-width: 980px) {
+/* ═══════════════════════════════════════════════════════════════
+   TWO KINDS OF BREAKPOINT
+
+   The game does not live in the window any more — it lives on a
+   monitor standing in a cafeteria, and that monitor is a good deal
+   smaller than the window around it. A `@media` query would keep
+   telling the interface it has 1440px to play with while it actually
+   has 900, and the desktop two-column layout would stay on long past
+   the point where it fits.
+
+   So the split is:
+
+     @container screen   the interface INSIDE the monitor. Follows the
+                         screen's own width, whatever the window does.
+
+     @media              the room: the menu, the housing, how far back
+                         the player is sitting, and the dialogue strip,
+                         which stands in the cafeteria rather than on
+                         the screen.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── THE INTERFACE, AGAINST ITS OWN SCREEN ──────────────────── */
+@container screen (max-width: 980px) {
   .game-shell {
     grid-template-columns: 1fr;
     padding-left: var(--sp-md);
     padding-right: var(--sp-md);
     gap: var(--sp-md);
   }
-
   /* The rail stops being a column and becomes a readout strip. */
   .rail { position: static; flex-direction: row; flex-wrap: wrap; gap: var(--sp-sm); }
   .rail > .panel { flex: 1 1 220px; }
   .rail > .rule-card { flex: 1 1 100%; order: 3; }
-
   .stab-value { font-size: 38px; }
 }
 
-/* ─── THE DECK ON SMALLER SCREENS ────────────────────────────
-   The cafeteria frame is a luxury of having room for it. A phone does
-   not, and the play area is not negotiable: the no-scroll guarantee
-   for message buttons comes first, so the housing thins out and then
-   very nearly disappears. The room is still there in the corners. */
-@media (max-width: 980px) {
-  .deck { padding: clamp(6px, 1.6vmin, 16px); }
-  .deck-bezel { padding: clamp(5px, 1.1vmin, 11px); }
-}
-
-@media (max-width: 640px) {
-  .deck { padding: 4px; }
-  .deck-bezel { padding: 3px; border-radius: 3px; }
-  .deck-plate { display: none; }        /* every pixel goes to the screen */
-  .caf-logo { width: min(500px, 92vw); }
-  .caf-actions { min-width: min(300px, 90vw); }
-  .caf-tag { font-size: 9px; letter-spacing: .14em; margin-top: 2px; padding: 0 var(--sp-sm); }
-  .caf-menu { gap: var(--sp-sm); padding: var(--sp-md) var(--sp-sm); }
-}
-
-@media (max-height: 560px) {
-  /* landscape phone: the logo has to give way to the buttons */
-  .caf-logo { width: min(420px, 62vw); }
-  .caf-menu { gap: 6px; }
-  .caf-tag { display: none; }
-}
-
-/* ─── PHONE ──────────────────────────────────────────────────── */
-@media (max-width: 640px) {
+@container screen (max-width: 640px) {
   .sys-bar { padding: var(--sp-xs) var(--sp-sm); gap: var(--sp-xs); }
   .sys-bar .sys-text { font-size: 9px; letter-spacing: 0.06em; }
   /* These two must stay on one line each — wrapping them doubled the
@@ -74,11 +65,11 @@
   .panel { padding: var(--sp-sm) var(--sp-md); }
 
   /* ── The status strip ──────────────────────────────────────────
-     A phone has one screen and the messages have to be ON it. The
-     rail therefore collapses to a two-up strip (stability | clock)
-     with the rule underneath, so the first message still lands above
-     the fold on a 360×640 device. Everything the player is scored on
-     stays visible; nothing needs scrolling to act. */
+     A small screen has one page and the messages have to be ON it.
+     The rail collapses to a two-up strip (stability | clock) with the
+     rule underneath, so the first message still lands above the fold
+     on a 360×640 device. Everything the player is scored on stays
+     visible; nothing needs scrolling to act. */
   .rail { flex-direction: row; flex-wrap: wrap; gap: 6px; }
   .rail > .panel-stab { flex: 1 1 56%; }
   .rail > .panel-run  { flex: 1 1 38%; }
@@ -97,12 +88,12 @@
   .rail-rows dd.mono-lg { font-size: 20px; line-height: 1.1; }
 
   /* ── The rule, compressed to its load-bearing line ─────────────
-     The rule must stay on screen at all times, and on a phone it does
-     — as the one sentence the player actually applies. The reasoning
-     behind it ("presentation means nothing") is taught in dialogue and
-     kept in [ HINWEISE ], which is always one tap away. Reclaiming
-     those ~80px is what lets three messages and their buttons share a
-     360×640 screen without anything falling below the fold. */
+     The rule must stay on screen at all times, and on a small screen
+     it does — as the one sentence the player actually applies. The
+     reasoning behind it ("presentation means nothing") is taught in
+     dialogue and kept in [ HINWEISE ], one tap away. Reclaiming those
+     ~80px is what lets messages and their buttons share a 360×640
+     screen without anything falling below the fold. */
   .rule-card { padding: 5px var(--sp-md) 7px; }
   .rule-card .panel-label { margin-bottom: 1px; font-size: 8.5px; }
   .rule-main { font-size: 11.5px; line-height: 1.4; }
@@ -127,13 +118,12 @@
   /* ── Bounding the pile ────────────────────────────────────────
      Messages are drawn from randomised pools, so card heights vary
      from run to run. Left alone, an unlucky draw of two long ones
-     could push the lower button below the fold on a small phone —
-     intermittently, which is the worst way for it to happen.
+     could push the lower button below the fold — intermittently,
+     which is the worst way for it to happen.
      New messages arrive at the TOP, so the newest card always shows
      in full. Everything beneath it is compacted to a bounded height
      while keeping the three things needed to act on it — chip,
-     headline and button — fully visible. The pile now has a
-     deterministic ceiling instead of a lucky one. */
+     headline and button — fully visible. */
   .feed .evt:not(:first-child) .evt-head {
     display: -webkit-box; -webkit-line-clamp: 2;
     -webkit-box-orient: vertical; overflow: hidden;
@@ -161,27 +151,14 @@
   .feed .evt.resolved .evt-chip { font-size: 8.5px; padding: 1px 4px; }
   .feed .evt.resolved .evt-verdict { padding-top: 4px; font-size: 10px; }
 
-  .dlg-box { grid-template-columns: 62px 1fr; }
-  .dlg-portrait { width: 62px; height: 88px; }
-  .bot-face { width: 54px; height: 60px; }
-  .dlg-body { padding: var(--sp-sm) var(--sp-md); }
-  .dlg-text { font-size: 14px; min-height: 40px; }
-  .dlg-container { padding: var(--sp-sm); padding-bottom: calc(var(--sp-sm) + env(safe-area-inset-bottom, 0px)); }
-
-  .boot-sequence { padding: var(--sp-lg) var(--sp-md); }
   .boot-line { font-size: 11.5px; line-height: 1.9; }
-  .boot-skip { bottom: var(--sp-md); right: var(--sp-md); }
 
   .pp-toast {
     top: auto;
-    bottom: calc(var(--sp-sm) + var(--dlg-h) + env(safe-area-inset-bottom, 0px));
+    bottom: calc(var(--sp-sm) + var(--dlg-h));
     left: var(--sp-sm); right: var(--sp-sm);
     max-width: none;
   }
-  /* Coming up from the bottom edge reads better than sliding in from
-     a screen edge that is only a few millimetres away. */
-  @keyframes toastIn  { from { transform: translateY(120%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-  @keyframes toastOut { from { transform: translateY(0); opacity: 1; }   to { transform: translateY(120%); opacity: 0; } }
 
   .overlay-card { padding: var(--sp-md); max-height: 88%; }
   .res-stab { font-size: 48px; }
@@ -189,25 +166,63 @@
   .final-stage { gap: var(--sp-md); }
 }
 
-/* ─── VERY NARROW (360px and below) ──────────────────────────── */
-@media (max-width: 380px) {
+@container screen (max-width: 380px) {
   .sys-bar .sys-text.sys-bar-title { font-size: 8.5px; }
   .evt-chip { font-size: 9px; letter-spacing: 0.1em; padding: 2px 5px; }
   .evt-head { font-size: 14px; }
   .stab-value { font-size: 26px; }
   .rail-rows dd.mono-lg { font-size: 15px; }
-  .final-bait { min-width: min(300px, 90vw); font-size: 11.5px; letter-spacing: 0.14em; padding: 15px var(--sp-md); }
 }
 
-/* ─── SHORT SCREENS (landscape phone) ────────────────────────── */
+/* Height, not width: an inline-size container cannot answer this one,
+   and on a landscape phone the screen's height tracks the window's
+   closely enough that the window is the honest thing to ask. */
 @media (max-height: 520px) {
   .final-stage { gap: var(--sp-sm); padding: var(--sp-sm); }
   .final-clock { font-size: clamp(38px, 11vh, 62px); }
   .final-task  { font-size: clamp(22px, 7vh, 38px); }
   .final-slot  { min-height: 64px; }
-  .title-card  { gap: var(--sp-sm); }
-  .tc-emblem   { width: 72px; height: 72px; margin-bottom: 0; }
-  .tc-pause i  { height: 24px; width: 7px; }
+  .final-bait  { min-width: min(300px, 90vw); font-size: 11.5px; letter-spacing: 0.14em; }
+}
+
+/* ─── THE ROOM, AGAINST THE WINDOW ───────────────────────────
+   How far back the player sits, how thick the housing is, and how the
+   menu lays itself out are all properties of the actual window. */
+@media (max-width: 980px) {
+  :root { --room-gap: clamp(8px, 2.4vmin, 22px); }
+  .deck-bezel { padding: clamp(5px, 1.1vmin, 11px); }
+}
+
+@media (max-width: 640px) {
+  /* The cafeteria frame is a luxury of having room for it. A phone
+     does not, and the play area is not negotiable: the no-scroll
+     guarantee for message buttons comes first, so the housing thins
+     out and very nearly disappears. The room is still in the corners. */
+  :root { --room-gap: 4px; }
+  .deck-bezel { padding: 3px; border-radius: 3px; }
+  .deck-plate { display: none; }        /* every pixel goes to the screen */
+  .caf-logo { width: min(500px, 92vw); }
+  .caf-actions { min-width: min(300px, 90vw); }
+  .caf-tag { font-size: 9px; letter-spacing: .14em; margin-top: 2px; padding: 0 var(--sp-sm); }
+  .caf-menu { gap: var(--sp-sm); padding: var(--sp-md) var(--sp-sm); }
+}
+
+@media (max-height: 560px) {
+  /* landscape phone: the logo has to give way to the buttons */
+  .caf-logo { width: min(420px, 62vw); }
+  .caf-menu { gap: 6px; }
+  .caf-tag { display: none; }
+}
+
+/* ─── THE DIALOGUE STRIP, AGAINST THE WINDOW ────────────────
+   It stands in the room, so it sizes itself against the room. */
+@media (max-width: 640px) {
+  .dlg-box { grid-template-columns: 62px 1fr; }
+  .dlg-portrait { width: 62px; height: 88px; }
+  .bot-face { width: 54px; height: 60px; }
+  .dlg-body { padding: var(--sp-sm) var(--sp-md); }
+  .dlg-text { font-size: 14px; min-height: 40px; }
+  .dlg-container { padding: var(--sp-sm); padding-bottom: calc(var(--sp-sm) + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* ═══════════════════════════════════════════════════════════════
