@@ -26,6 +26,33 @@
   .stab-value { font-size: 38px; }
 }
 
+/* ─── THE DECK ON SMALLER SCREENS ────────────────────────────
+   The cafeteria frame is a luxury of having room for it. A phone does
+   not, and the play area is not negotiable: the no-scroll guarantee
+   for message buttons comes first, so the housing thins out and then
+   very nearly disappears. The room is still there in the corners. */
+@media (max-width: 980px) {
+  .deck { padding: clamp(6px, 1.6vmin, 16px); }
+  .deck-bezel { padding: clamp(5px, 1.1vmin, 11px); }
+}
+
+@media (max-width: 640px) {
+  .deck { padding: 4px; }
+  .deck-bezel { padding: 3px; border-radius: 3px; }
+  .deck-plate { display: none; }        /* every pixel goes to the screen */
+  .caf-logo { width: min(500px, 92vw); }
+  .caf-actions { min-width: min(300px, 90vw); }
+  .caf-tag { font-size: 9px; letter-spacing: .14em; margin-top: 2px; padding: 0 var(--sp-sm); }
+  .caf-menu { gap: var(--sp-sm); padding: var(--sp-md) var(--sp-sm); }
+}
+
+@media (max-height: 560px) {
+  /* landscape phone: the logo has to give way to the buttons */
+  .caf-logo { width: min(420px, 62vw); }
+  .caf-menu { gap: 6px; }
+  .caf-tag { display: none; }
+}
+
 /* ─── PHONE ──────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .sys-bar { padding: var(--sp-xs) var(--sp-sm); gap: var(--sp-xs); }
@@ -156,7 +183,7 @@
   @keyframes toastIn  { from { transform: translateY(120%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
   @keyframes toastOut { from { transform: translateY(0); opacity: 1; }   to { transform: translateY(120%); opacity: 0; } }
 
-  .overlay-card { padding: var(--sp-md); max-height: 88vh; }
+  .overlay-card { padding: var(--sp-md); max-height: 88%; }
   .res-stab { font-size: 48px; }
   .res-rank-letter { font-size: 56px; }
   .final-stage { gap: var(--sp-md); }

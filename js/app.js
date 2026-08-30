@@ -23,137 +23,42 @@
     catch (_) { return false; }
   }
 
-  /* ═══ BOOT ══════════════════════════════════════════════════════
-     KA-II's BIOS roll, re-pointed at a subsystem nobody documented. */
-  function bootLines() {
-    return [
-      { text: 'KA-II BIOS v2.4.7 // TEAM_APERTURE',           cls: 'dim',     delay: 0 },
-      { text: 'Nebensystem wird geladen…',                    cls: '',        delay: 420 },
-      { text: '> Sektor 7C: VERBUNDEN',                       cls: 'success', delay: 760 },
-      { text: '> Personalarchiv: GEFUNDEN',                   cls: 'success', delay: 1080 },
-      { text: '> Datei: PAUSENREGELUNG_07',                   cls: '',        delay: 1420 },
-      { text: 'Analyse…',                                     cls: 'dim',     delay: 1800 },
-      { text: '> PAUSE: ZEITLICH BEGRENZTE UNTERBRECHUNG DER ARBEITSTÄTIGKEIT', cls: '', delay: 2200 },
-      { text: '> ZWECK: REGENERATION',                        cls: '',        delay: 2560 },
-      { text: '> PRODUKTIVITÄTSSTEIGERUNG: WAHRSCHEINLICH',   cls: '',        delay: 2900 },
-      { text: '.',                                            cls: 'dim',     delay: 3400 },
-      { text: '. .',                                          cls: 'dim',     delay: 3650 },
-      { text: '. . .',                                        cls: 'dim',     delay: 3900 },
-      { text: 'UNBEKANNTER PROZESS ERKANNT:',                 cls: 'warn',    delay: 4400 },
-      { text: 'NICHTSTUN',                                    cls: 'big',     delay: 4950 },
-      { text: '> Verfahrensanweisung: NICHT VORHANDEN',       cls: 'error',   delay: 5900 },
-      { text: '> Messverfahren: NICHT VORHANDEN',             cls: 'error',   delay: 6250 },
-      { text: 'KALIBRIERUNG ERFORDERLICH.',                   cls: 'warn',    delay: 6800 },
-      { text: 'Starte PAUSENPROTOKOLL.EXE …',                 cls: 'success', delay: 7400 },
-    ];
-  }
-
-  function runBoot(done) {
-    const seq = document.getElementById('bootSequence');
-    const skip = document.getElementById('bootSkip');
-
-    let seen = false;
-    try { seen = sessionStorage.getItem(BOOT_SEEN_KEY) === '1'; } catch (_) {}
-    try { sessionStorage.setItem(BOOT_SEEN_KEY, '1'); } catch (_) {}
-
-    // Coming back gets a short resume, and so does a player who has
-    // asked for less motion. Either can be cut short at any moment.
-    const lines = (seen || reduced())
-      ? [ { text: 'PAUSENPROTOKOLL // SITZUNG WIRD FORTGESETZT', cls: 'dim', delay: 0 },
-          { text: '> Nebensystem bereit.', cls: 'success', delay: 260 } ]
-      : bootLines();
-
-    const timers = [];
-    let finished = false;
-
-    if (lines.length > 2) skip.classList.add('visible');
-
-    function finish() {
-      if (finished) return;
-      finished = true;
-      skip.classList.remove('visible');
-      timers.forEach(clearTimeout);
-      document.removeEventListener('keydown', onKey);
-      seq.removeEventListener('click', finish);
-      skip.removeEventListener('click', finish);
-      seq.style.transition = 'opacity .5s ease';
-      seq.style.opacity = '0';
-      setTimeout(() => { seq.classList.add('hidden'); done(); }, reduced() ? 0 : 500);
-    }
-    function onKey(e) {
-      if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); finish(); }
-    }
-
-    document.addEventListener('keydown', onKey);
-    seq.addEventListener('click', finish);
-    skip.addEventListener('click', finish);
-
-    lines.forEach(l => {
-      timers.push(setTimeout(() => {
-        const d = document.createElement('div');
-        d.className = `boot-line ${l.cls}`;
-        d.textContent = l.text;
-        seq.appendChild(d);
-        requestAnimationFrame(() => d.classList.add('visible'));
-        if (l.cls === 'big') PPAudio.klonk();       // the facility physically notices
-        else PPAudio.tick();
-      }, reduced() ? Math.min(l.delay, 300) : l.delay));
-    });
-
-    const last = lines[lines.length - 1];
-    timers.push(setTimeout(finish, (reduced() ? 400 : last.delay + 1200)));
-  }
-
-  /* ═══ TITLE ═════════════════════════════════════════════════════ */
-  function showTitle(resumeRun) {
-    const card = document.getElementById('titleCard');
-    const actions = document.getElementById('titleActions');
-    card.classList.remove('hidden');
-
+  /* ═══ MAIN MENU ═════════════════════════════════════════════════
+     The menu is the room. The buttons sit over it; the camera drifts
+     behind them until one is pressed. ─────────────────────────────── */
+  function showMenu(resumeRun) {
+    const actions = document.getElementById('cafActions');
     actions.innerHTML = '';
+
+    const add = (label, cls, fn) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'caf-btn ' + cls;
+      b.textContent = label;
+      b.addEventListener('click', fn);
+      actions.appendChild(b);
+      return b;
+    };
+
     if (resumeRun && resumeRun.round > 0) {
-      const cont = document.createElement('button');
-      cont.type = 'button';
-      cont.className = 'ka-btn primary';
-      cont.textContent = '[ PAUSE FORTSETZEN ]';
-      cont.addEventListener('click', () => begin(resumeRun));
-      actions.appendChild(cont);
-
-      const fresh = document.createElement('button');
-      fresh.type = 'button';
-      fresh.className = 'ka-btn small';
-      fresh.textContent = '[ NEUE PAUSE ]';
-      fresh.addEventListener('click', () => { PPState.clearRun(); begin(null); });
-      actions.appendChild(fresh);
+      add('[ PAUSE FORTSETZEN ]', 'primary', () => begin(resumeRun));
+      add('[ NEUE PAUSE ]', 'small', () => { PPState.clearRun(); begin(null); });
     } else {
-      const start = document.createElement('button');
-      start.type = 'button';
-      start.className = 'ka-btn primary';
-      start.textContent = '[ PAUSE BEGINNEN ]';
-      start.addEventListener('click', () => begin(null));
-      actions.appendChild(start);
+      add('[ PAUSE BEGINNEN ]', 'primary', () => begin(null));
     }
+    add('[ VERSUCHSHINWEISE ]', 'small', openBriefing);
 
-    const info = document.createElement('button');
-    info.type = 'button';
-    info.className = 'ka-btn small';
-    info.textContent = '[ VERSUCHSHINWEISE ]';
-    info.addEventListener('click', openBriefing);
-    actions.appendChild(info);
-
-    setTimeout(() => actions.querySelector('.ka-btn')?.focus(), 120);
+    setTimeout(() => actions.querySelector('.caf-btn')?.focus(), 900);
   }
 
+  /* Fly into the terminal, then start the experiment on its screen. */
   function begin(resumeRun) {
     PPAudio.resume();
-    const card = document.getElementById('titleCard');
-    card.classList.add('fading');
-    setTimeout(() => {
-      card.classList.add('hidden');
-      card.classList.remove('fading');
+    PPAudio.hum.start();          // the room has been humming all along
+    PPCafeteria.approach(() => {
       document.getElementById('gameShell').classList.remove('hidden');
       PPGame.start(resumeRun);
-    }, reduced() ? 0 : 800);
+    });
   }
 
   /* ═══ BRIEFING OVERLAY ══════════════════════════════════════════
@@ -172,11 +77,15 @@
   }
 
   /* ═══ SOUND ═════════════════════════════════════════════════════ */
+  /* The sound switch exists in two places — on the menu and on the
+     terminal's own bar — but it is one setting, so both are painted
+     from the same state and either can flip it. */
   function paintAudioBtn() {
-    const b = document.getElementById('audioToggle');
     const off = PPAudio.isMuted();
-    b.textContent = off ? '[ TON: AUS ]' : '[ TON: AN ]';
-    b.setAttribute('aria-pressed', off ? 'true' : 'false');
+    document.querySelectorAll('.js-audio').forEach(b => {
+      b.textContent = off ? '[ TON: AUS ]' : '[ TON: AN ]';
+      b.setAttribute('aria-pressed', off ? 'true' : 'false');
+    });
   }
 
   /* ═══ INIT ══════════════════════════════════════════════════════ */
@@ -188,11 +97,11 @@
     PPAudio.setMuted(!!PPState.setting('muted'));
     paintAudioBtn();
 
-    document.getElementById('audioToggle').addEventListener('click', () => {
+    document.querySelectorAll('.js-audio').forEach(b => b.addEventListener('click', () => {
       const muted = PPAudio.toggleMute();
       PPState.setting('muted', muted);
       paintAudioBtn();
-    });
+    }));
 
     document.getElementById('briefBtn').addEventListener('click', openBriefing);
     document.getElementById('briefClose').addEventListener('click', closeOverlay);
@@ -212,17 +121,23 @@
     PPResults.setReplayHandler(kind => {
       PPGame.abort();
       PPState.clearRun();
+      document.getElementById('ending').classList.add('hidden');
+      document.getElementById('endSkip').classList.add('hidden');
+      document.getElementById('feed').innerHTML = '';
+      document.getElementById('feedIdle').classList.remove('hidden');
+      document.getElementById('ruleCard').classList.add('hidden');
+      document.getElementById('ruleSocial').classList.add('hidden');
+
       if (kind === 'again') {
-        document.getElementById('ending').classList.add('hidden');
-        document.getElementById('endSkip').classList.add('hidden');
-        document.getElementById('feed').innerHTML = '';
-        document.getElementById('feedIdle').classList.remove('hidden');
-        document.getElementById('ruleCard').classList.add('hidden');
-        document.getElementById('ruleSocial').classList.add('hidden');
+        // Straight back into the chair — no second trip across the room.
         document.getElementById('gameShell').classList.remove('hidden');
         PPGame.start(null);
       } else {
-        location.reload();
+        // Back out to the cafeteria, and the menu rebuilds itself.
+        document.getElementById('gameShell').classList.add('hidden');
+        PPAudio.hum.stop();
+        PPCafeteria.reset();
+        showMenu(null);
       }
     });
 
@@ -232,8 +147,9 @@
       if (n) n.classList.remove('hidden');
     }
 
-    const resumeRun = PPState.getRun();
-    runBoot(() => showTitle(resumeRun));
+    PPCafeteria.init();
+    PPCafeteria.startDrift();
+    showMenu(PPState.getRun());
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

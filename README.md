@@ -12,6 +12,47 @@ Konto, ohne Datenbank.
 
 ---
 
+## Die Kantine
+
+Das Hauptmenü ist ein Raum. Die Kamera fährt langsam durch eine warme,
+braune Kantine in Sektor 7C — Holzvertäfelung, Hängelampen mit ihren
+Lichtkegeln, eine Kaffeemaschine, ein Regal mit Tassen, eine Pflanze, die
+mehrere Protokolle überlebt hat. Auf einem Seitentisch steht ein Terminal
+und läuft.
+
+Auf **[ PAUSE BEGINNEN ]** fliegt die Kamera hinein. Während des Anflugs
+startet das BIOS **auf dem kleinen Bildschirm**, sodass die Anlage bereits
+wach ist, wenn man ankommt. Am Ende der Fahrt übernimmt der echte,
+ungescalte Monitor per Überblendung — das Spiel selbst wird nie skaliert
+und bleibt gestochen scharf.
+
+Danach läuft das Spiel **im Monitor**, mit der Kantine ringsum: warme Wand,
+die Holzplatte des Tisches, das kalte Schirmlicht, das darauf zurückfällt.
+Man verlässt den Raum nie ganz.
+
+Die beiden Paletten werden streng getrennt gehalten:
+
+| | Palette | Wo |
+|---|---|---|
+| **Die Kantine** | `--caf-*`, warm und braun | nur **außerhalb** des Bildschirms |
+| **Die Anlage** | KA-II-Tokens, kalt und grau | nur **innerhalb** des Bildschirms |
+
+Das ist der ganze Witz in Farbe: Man sitzt in einer gemütlichen Kantine und
+starrt auf ein Gerät, das die Gemütlichkeit für einen Messvorgang hält.
+
+Die Szene ist vollständig in CSS und Inline-SVG gezeichnet — keine Fotos,
+kein Ladebalken. Der einzige Bilddatei-Anteil ist das Logo.
+
+Technisch trägt `.deck-screen` ein `transform`. Das ist keine Deko: Es macht
+den Bildschirm zum Bezugsrahmen für die `position: fixed`-Ebenen des Spiels,
+sodass Dialogleiste, Überlagerungen und Finale **im Monitor** bleiben,
+statt über die ganze Kantine auszubrechen.
+
+Bei `prefers-reduced-motion` entfallen Fahrt und Anflug: Der Raum steht
+still, und **[ PAUSE BEGINNEN ]** schneidet direkt ins Terminal.
+
+---
+
 ## Die Mechanik
 
 Der Spieler muss lernen, wann er **nicht** reagieren soll.
@@ -54,7 +95,7 @@ und der Versuch läuft weiter. Jeder Durchlauf erreicht das Ende.
 
 ### Ablauf
 
-Boot → Titel → sieben Runden (Eingewöhnung, Grundrauschen, Wartungscodes,
+Kantine → Anflug → sieben Runden (Eingewöhnung, Grundrauschen, Wartungscodes,
 Kollegiale Störung, Darstellungstest, Zielkonflikt, Pausenstress) →
 Abschlusskalibrierung → Auswertung → Abspann.
 
@@ -143,8 +184,9 @@ Auf dem Telefon gilt zusätzlich eine gemessene Zusage: **jede Schaltfläche ein
 noch offenen Meldung ist ohne Scrollen erreichbar.** Dafür sind gleichzeitig
 höchstens zwei Meldungen offen, erledigte Karten klappen auf ihre Bewertung
 zusammen, und die Regelkarte zeigt ihre tragende Zeile. Über eine vollständige
-Sitzung auf 360×640 und 360×740 liegt die tiefste Schaltflächenkante bei 613 px
-bzw. 674 px — keine einzige unter dem Falz.
+Sitzung auf 360×640 und 360×740 liegt die tiefste Schaltflächenkante bei 607 px
+bzw. 644 px — keine einzige unter dem Falz. Auf dem Telefon schrumpft der
+Kantinenrahmen dafür auf 4 px: Die Spielfläche geht vor.
 
 Die Reihenfolge der Meldungen wird dabei **nie** zugunsten echter Codes
 umsortiert. Position darf nichts verraten.
@@ -174,19 +216,24 @@ Spielmechanik.
 ```
 index.html
 favicon.svg
+assets/
+  logo.png/.webp  das Logo, freigestellt
 css/
-  base.css        Tokens, Reset, Atmosphäre, Schaltflächensystem (stabile Hitboxen)
+  base.css        Tokens, Reset, Schaltflächensystem (stabile Hitboxen)
+  cafeteria.css   Kantine, Kamerafahrt, Anflug, Monitorrahmen
   facility.css    Systemleiste, Boot, Panels, Dialogleiste, Einheiten, Toasts
   game.css        Statusleiste, Meldungen, Abschlusskalibrierung, Auswertung
   responsive.css  Breakpoints und Reduced Motion
 js/
   audio.js        prozedurales Web Audio, Brumm, KLONK
+  boot.js         das BIOS — läuft im Monitor und in voller Größe
+  cafeteria.js    Kamerafahrt und Anflug
   state.js        Einstellungen, kleiner Wiederaufnahmepunkt, Auszeichnungen
   dialogue.js     R-3MI / V-TGM / SYSTEM, animierte Gesichter, Untertitel
   events.js       Meldungsdaten, Rundenskripte, Fairness-Prüfung
   game.js         Rundenlauf, Bewertung, die zehn Sekunden
   results.js      Auswertung, Rang, Auszeichnungen, Abspann
-  app.js          Boot, Titel, Verdrahtung
+  app.js          Menü und Verdrahtung
 ```
 
 Keine Frameworks, kein Build-Schritt. `index.html` in einem Browser öffnen oder
