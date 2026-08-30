@@ -1,0 +1,464 @@
+/* ═══════════════════════════════════════════════════════════════
+   PAUSENPROTOKOLL — THE EXPERIMENT ITSELF
+   Status rail, the message feed, the safety rule, the final
+   calibration and the results sheet.
+   ═══════════════════════════════════════════════════════════════ */
+
+.game-shell {
+  position: relative;
+  z-index: 5;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: calc(var(--sp-lg) + 22px) var(--sp-lg) var(--sp-lg);
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: var(--sp-lg);
+  align-items: start;
+  min-height: 100vh;
+  /* keep the feed clear of the dialogue strip while a line is up */
+  padding-bottom: calc(var(--sp-lg) + var(--dlg-h));
+  transition: padding-bottom var(--t-mid);
+}
+
+/* ═══ STATUS RAIL ═══════════════════════════════════════════════ */
+.rail { display: flex; flex-direction: column; gap: var(--sp-md); position: sticky; top: 62px; }
+
+/* ─── Pausenstabilität ───────────────────────────────────────── */
+.stab-value {
+  font-family: var(--font-display);
+  font-size: 46px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: var(--accent-r3mi);
+  transition: color var(--t-mid);
+}
+.stab-value .unit { font-size: 20px; color: var(--text-secondary); margin-left: 2px; }
+.stab-value.mid  { color: var(--accent-warn); }
+.stab-value.low  { color: var(--text-error); }
+
+.stab-track {
+  height: 10px;
+  background: var(--bg-deep);
+  border: 1px solid var(--bdr-mid);
+  margin-top: var(--sp-sm);
+  position: relative;
+  overflow: hidden;
+}
+.stab-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 100%;
+  background: linear-gradient(90deg, rgba(46,207,98,0.45), var(--accent-r3mi));
+  transition: width var(--t-slow), background var(--t-mid);
+}
+.stab-fill.mid { background: linear-gradient(90deg, rgba(200,138,40,0.45), var(--accent-warn)); }
+.stab-fill.low { background: linear-gradient(90deg, rgba(200,68,68,0.45), var(--text-error)); }
+/* segment ticks, so the bar reads as an instrument and not a loading bar */
+.stab-track::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0 19px, rgba(4,8,12,0.85) 19px 20px);
+  pointer-events: none;
+}
+
+.stab-delta {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  margin-top: var(--sp-sm);
+  min-height: 1.3em;
+  color: var(--text-dim);
+  transition: color var(--t-fast);
+}
+.stab-delta.minus { color: var(--text-error); }
+.stab-delta.plus  { color: var(--accent-r3mi); }
+
+/* ─── Round + timer ──────────────────────────────────────────── */
+.rail-rows { display: grid; grid-template-columns: 1fr auto; gap: 5px var(--sp-sm); }
+.rail-rows dt { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; color: var(--text-dim); text-transform: uppercase; }
+.rail-rows dd { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.12em; color: var(--text-primary); text-align: right; }
+.rail-rows dd.mono-lg { font-size: 17px; }
+
+/* ─── The safety rule — permanently available once taught ────── */
+.rule-card { border-color: var(--accent-warn); }
+.rule-card .panel-label { color: var(--accent-warn); }
+.rule-main {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+.rule-main .code {
+  color: var(--accent-warn);
+  border: 1px solid var(--accent-warn);
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+.rule-note {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-top: var(--sp-sm);
+  padding-top: var(--sp-sm);
+  border-top: 1px solid var(--bdr-dim);
+}
+
+/* ═══ MESSAGE FEED ══════════════════════════════════════════════ */
+.feed-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--sp-sm);
+  margin-bottom: var(--sp-sm);
+  padding-bottom: var(--sp-sm);
+  border-bottom: 1px solid var(--bdr-dim);
+}
+
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+  /* Reserved so the column does not jump as messages come and go —
+     but not while it is empty, or the idle notice below would float
+     detached at the bottom of a reserved-but-blank block. */
+  min-height: 340px;
+}
+.feed:empty { min-height: 0; }
+
+/* The facility's own idea of a calm break: an empty column. */
+.feed-idle {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  padding: var(--sp-xl) var(--sp-md);
+  text-align: center;
+  border: 1px dashed var(--bdr-dim);
+}
+
+/* ─── A message ──────────────────────────────────────────────── */
+.evt {
+  background: var(--bg-panel);
+  border: 1px solid var(--bdr-mid);
+  border-left: 3px solid var(--text-dim);
+  padding: var(--sp-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+  position: relative;
+  overflow: hidden;
+  animation: evtIn 0.32s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes evtIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+.evt.leaving { animation: evtOut 0.28s ease forwards; }
+@keyframes evtOut { to { opacity: 0; transform: translateY(-6px); } }
+
+.evt-top { display: flex; align-items: center; gap: var(--sp-sm); flex-wrap: wrap; }
+
+/* The chip. Every message carries one; only an M-NN chip means "act".
+   The distinction is TEXT, never colour — a red chip and a grey chip
+   are equally likely to be irrelevant, and that is the whole game. */
+.evt-chip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  padding: 3px 7px;
+  border: 1px solid currentColor;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.evt-head {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  line-height: 1.25;
+}
+
+.evt-body {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+/* The lifetime bar: how long this message stays. Present on every
+   message that has a button, so it is never itself a tell. */
+.evt-life {
+  position: absolute;
+  left: 0; bottom: 0;
+  height: 2px;
+  width: 100%;
+  background: var(--text-dim);
+  transform-origin: left center;
+  opacity: .55;
+}
+
+/* ── Presentation tiers. Chosen by the Anlage for effect, and
+      deliberately uncorrelated with whether anything must be done. ── */
+.evt.tone-quiet { border-left-color: var(--bdr-bright); opacity: .92; }
+.evt.tone-quiet .evt-head { font-size: 14px; color: var(--text-secondary); }
+
+.evt.tone-info  { border-left-color: var(--accent-system); }
+.evt.tone-info .evt-chip { color: var(--accent-system); }
+
+.evt.tone-warn  { border-left-color: var(--accent-warn); }
+.evt.tone-warn .evt-chip { color: var(--accent-warn); }
+.evt.tone-warn .evt-head { color: #d9ae6a; }
+
+.evt.tone-crit {
+  border-left-color: var(--text-error);
+  border-color: rgba(200,68,68,0.45);
+  background: linear-gradient(180deg, rgba(200,68,68,0.07), transparent 60%), var(--bg-panel);
+}
+.evt.tone-crit .evt-chip { color: var(--text-error); }
+.evt.tone-crit .evt-head { font-size: 21px; color: #e07a72; letter-spacing: 0.13em; }
+.evt.tone-crit .evt-glow { animation: evtCrit 1.05s ease-in-out infinite; }
+@keyframes evtCrit { 0%,100% { box-shadow: inset 0 0 0 0 rgba(200,68,68,0); } 50% { box-shadow: inset 0 0 26px 0 rgba(200,68,68,0.16); } }
+.evt-glow { position: absolute; inset: 0; pointer-events: none; }
+
+/* R-3MI leaning over your shoulder */
+.evt.tone-r3mi { border-left-color: var(--accent-r3mi); }
+.evt.tone-r3mi .evt-chip { color: var(--accent-r3mi); }
+.evt.tone-r3mi .evt-head { font-family: var(--font-body); font-weight: 400; text-transform: none; letter-spacing: 0.01em; font-size: 15px; color: var(--accent-r3mi); }
+
+/* ─── The button on a message ────────────────────────────────
+   Same stable-hitbox construction as .ka-btn: the hit target is
+   fixed, only the inner surface reacts to a press. Full width and
+   48px tall so a thumb can hit it without aiming. ─────────────── */
+.evt-action {
+  position: relative;
+  isolation: isolate;
+  align-self: flex-start;
+  min-width: min(260px, 100%);
+  min-height: 48px;
+  padding: 13px var(--sp-md);
+  background: none;
+  border: 0;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  transition: color var(--t-fast);
+}
+.evt-action::before {
+  content: '';
+  position: absolute; inset: 0; z-index: -1;
+  border: 1px solid var(--bdr-bright);
+  background: var(--bg-surface);
+  transition: transform 0.12s ease, border-color var(--t-fast),
+              background var(--t-fast), box-shadow var(--t-fast);
+}
+.evt-action:hover { color: #fff; }
+.evt-action:hover::before { border-color: var(--accent-system); background: var(--bg-raised); }
+.evt-action:focus-visible { outline: none; color: #fff; }
+.evt-action:focus-visible::before { border-color: var(--accent-system); box-shadow: 0 0 0 2px var(--accent-system); }
+.evt-action:active::before,
+.evt-action.hit::before { transform: scale(0.98); background: var(--accent-system-lo); border-color: var(--accent-system); }
+.evt-action:disabled { pointer-events: none; opacity: .45; }
+
+/* A button that begs to be pressed. Bait, and nothing more:
+   the pulse lives on the inner layer, so the hit target never moves. */
+.evt-action.bait::before { animation: baitPulse 1.15s ease-in-out infinite; }
+@keyframes baitPulse {
+  0%,100% { border-color: var(--bdr-bright); background: var(--bg-surface); }
+  50%     { border-color: var(--accent-warn); background: var(--accent-warn-lo); }
+}
+
+/* A running animation outranks a normal declaration in the cascade, so
+   while the pulse is going it wins over :focus-visible and :active and
+   the keyboard focus ring silently disappears — on precisely the buttons
+   the game most wants a player to look at before deciding. Focus and
+   press therefore stop the pulse outright rather than compete with it. */
+.evt-action.bait:focus-visible::before,
+.evt-action.bait:active::before { animation: none; }
+
+/* ─── Resolution note left behind on a message ───────────────── */
+.evt-verdict {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding-top: var(--sp-sm);
+  border-top: 1px solid var(--bdr-dim);
+}
+.evt-verdict.ok   { color: var(--accent-r3mi); }
+.evt-verdict.bad  { color: var(--text-error); }
+.evt-verdict.neut { color: var(--text-secondary); }
+
+.evt.resolved { opacity: .62; }
+.evt.resolved .evt-life { display: none; }
+
+/* ═══ FINAL CALIBRATION — the ten seconds ═══════════════════════ */
+.final-stage {
+  position: fixed; inset: 0;
+  z-index: 420;
+  background: var(--bg-deep);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: var(--sp-lg);
+  padding: var(--sp-lg);
+  text-align: center;
+  opacity: 0;
+  animation: titleIn 1.4s ease forwards;
+}
+.final-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.3em; color: var(--text-dim); text-transform: uppercase; }
+.final-task {
+  font-family: var(--font-display);
+  font-size: clamp(34px, 9vw, 72px);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--text-primary);
+}
+.final-clock {
+  font-family: var(--font-mono);
+  font-size: clamp(52px, 15vw, 108px);
+  letter-spacing: 0.06em;
+  color: var(--accent-system);
+  line-height: 1;
+  text-shadow: 0 0 34px rgba(58,143,212,0.32);
+}
+.final-clock.resetting { color: var(--text-error); text-shadow: 0 0 34px rgba(200,68,68,0.4); }
+
+/* the ring that quietly drains */
+.final-ring { width: min(240px, 62vw); height: 3px; background: var(--bg-surface); border: 1px solid var(--bdr-mid); position: relative; overflow: hidden; }
+.final-ring i { position: absolute; inset: 0 auto 0 0; background: var(--accent-system); width: 100%; }
+
+.final-slot { min-height: 96px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-sm); }
+
+/* The temptation. Nothing about it moves the hit target. */
+.final-bait {
+  position: relative;
+  isolation: isolate;
+  /* A FIXED width, not a min-width. The label escalates while the
+     player is staring at it ("[ FORTFAHREN ]" → "[ WIRKLICH NICHT
+     DRÜCKEN ]"), and a button that resized itself under the pointer
+     would be the same class of bug as the KA-II Schleusenring. Both
+     labels fit on one line inside this width down to 360px. */
+  width: min(340px, 88vw);
+  min-height: 52px;
+  padding: 15px var(--sp-lg);
+  background: none;
+  border: 0;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  animation: baitIn 0.5s ease both;
+}
+@keyframes baitIn { from { opacity: 0; } to { opacity: 1; } }
+.final-bait::before {
+  content: '';
+  position: absolute; inset: 0; z-index: -1;
+  border: 1px solid var(--bdr-bright);
+  background: var(--bg-surface);
+  transition: transform 0.12s ease, border-color var(--t-fast), background var(--t-fast), box-shadow var(--t-fast);
+}
+.final-bait:hover::before { border-color: var(--accent-warn); background: var(--accent-warn-lo); }
+.final-bait:focus-visible { outline: none; }
+.final-bait:focus-visible::before { border-color: var(--accent-warn); box-shadow: 0 0 0 2px var(--accent-warn); }
+.final-bait:active::before { transform: scale(0.98); background: var(--accent-warn-lo); }
+.final-bait.urgent::before { animation: baitPulse 0.72s ease-in-out infinite; }
+/* Same reason as .evt-action.bait above: the pulse must not eat the
+   focus ring on the one button of the finale. */
+.final-bait.urgent:focus-visible::before,
+.final-bait.urgent:active::before { animation: none; }
+
+.final-hint { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em; color: var(--text-dim); }
+.final-reset-note { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.16em; color: var(--text-error); min-height: 1.4em; }
+
+/* ═══ RESULTS ═══════════════════════════════════════════════════ */
+.results {
+  position: fixed; inset: 0;
+  z-index: 430;
+  background: var(--bg-deep);
+  overflow-y: auto;
+  padding: var(--sp-lg) var(--sp-md);
+  display: flex; align-items: flex-start; justify-content: center;
+  opacity: 0;
+  animation: titleIn 1s ease forwards;
+}
+.res-card { max-width: 520px; width: 100%; margin: auto; display: flex; flex-direction: column; gap: var(--sp-md); text-align: center; }
+.res-head { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.28em; color: var(--text-dim); text-transform: uppercase; }
+.res-title {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 5vw, 34px);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--text-primary);
+}
+.res-stab { font-family: var(--font-display); font-size: 62px; font-weight: 700; line-height: 1; color: var(--accent-r3mi); }
+.res-stab.mid { color: var(--accent-warn); }
+.res-stab.low { color: var(--text-error); }
+.res-stab .unit { font-size: 24px; color: var(--text-secondary); }
+
+.res-stats { display: grid; grid-template-columns: 1fr auto; gap: 7px var(--sp-md); text-align: left; margin: var(--sp-sm) 0; }
+.res-stats dt { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.13em; color: var(--text-secondary); text-transform: uppercase; }
+.res-stats dd { font-family: var(--font-mono); font-size: 13px; color: var(--text-primary); text-align: right; }
+
+.res-rank { border: 1px solid var(--bdr-mid); padding: var(--sp-md); background: var(--bg-panel); position: relative; }
+.res-rank::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--rank-color, var(--accent-system)); }
+.res-rank-letter {
+  font-family: var(--font-display);
+  font-size: 70px; font-weight: 700; line-height: 1;
+  color: var(--rank-color, var(--accent-system));
+  text-shadow: 0 0 26px var(--rank-color, var(--accent-system));
+}
+.res-rank-name { font-family: var(--font-display); font-size: 19px; font-weight: 600; letter-spacing: 0.14em; color: var(--text-primary); margin-top: var(--sp-xs); }
+.res-rank-note { font-family: var(--font-mono); font-size: 11px; line-height: 1.6; color: var(--text-secondary); margin-top: var(--sp-sm); }
+
+.res-awards { display: flex; flex-direction: column; gap: var(--sp-xs); text-align: left; }
+.res-award { display: flex; gap: var(--sp-sm); align-items: baseline; border-bottom: 1px solid var(--bdr-dim); padding-bottom: var(--sp-xs); }
+.res-award-name { font-family: var(--font-display); font-size: 14px; font-weight: 600; letter-spacing: 0.07em; color: var(--accent-warn); }
+.res-award-desc { font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); }
+
+.res-actions { display: flex; flex-direction: column; gap: var(--sp-sm); align-items: stretch; margin-top: var(--sp-sm); }
+
+/* ═══ ENDING ════════════════════════════════════════════════════ */
+.ending {
+  position: fixed; inset: 0;
+  z-index: 440;
+  background: var(--bg-deep);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: var(--sp-md);
+  padding: var(--sp-lg);
+  text-align: center;
+}
+.end-line {
+  font-family: var(--font-mono);
+  font-size: clamp(12px, 2.4vw, 15px);
+  letter-spacing: 0.18em;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+.end-line.visible { opacity: 1; }
+.end-line.dim { color: var(--text-dim); }
+.end-line.big {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 7vw, 52px);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+.end-line.thanks { font-family: var(--font-body); text-transform: none; letter-spacing: 0.04em; font-size: 16px; color: var(--text-secondary); font-style: italic; }
+.end-clock { font-family: var(--font-mono); font-size: clamp(28px, 8vw, 48px); letter-spacing: 0.08em; color: var(--accent-warn); }

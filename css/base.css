@@ -1,0 +1,239 @@
+/* ═══════════════════════════════════════════════════════════════
+   PAUSENPROTOKOLL — BASE
+   Team_Aperture
+
+   The design tokens below are KA-II's, carried over unchanged from
+   css/global.css of "Die Kalibrierungsanlage II: Die Reaktivierung".
+   Pausenprotokoll runs on the same facility, so it uses the same
+   palette, the same three typefaces and the same spacing scale —
+   not an approximation of them.
+
+   What is NOT carried over: the guest-unit accents (no guests here),
+   the scene/prop/hotspot system (this is not point-and-click), and
+   KA-II's `.ka-btn:active { transform: … }`. See the BUTTON block.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── CSS VARIABLES ─────────────────────────────────────────── */
+:root {
+  /* Core backgrounds */
+  --bg-deep:        #04080c;
+  --bg-panel:       #090f15;
+  --bg-surface:     #0f1820;
+  --bg-raised:      #162030;
+
+  /* Primary accents — canonical: R-3MI is GREEN, V-TGM is RED */
+  --accent-r3mi:    #2ecf62;
+  --accent-r3mi-lo: rgba(46,207,98,0.12);
+  --accent-vtgm:    #c0322c;
+  --accent-vtgm-lo: rgba(192,50,44,0.12);
+  --accent-system:  #3a8fd4;
+  --accent-system-lo: rgba(58,143,212,0.12);
+  --accent-warn:    #c88a28;
+  --accent-warn-lo: rgba(200,138,40,0.12);
+
+  /* Text */
+  --text-primary:   #b8ccd8;
+  --text-secondary: #5a7a8a;
+  --text-dim:       #2a3a4a;
+  --text-terminal:  #6ec88a;
+  --text-error:     #c84444;
+
+  /* Borders */
+  --bdr-dim:    #0e1c28;
+  --bdr-mid:    #1a2c3c;
+  --bdr-bright: #2a3c4c;
+
+  /* Fonts */
+  --font-mono:    'Share Tech Mono', 'Courier New', monospace;
+  --font-display: 'Rajdhani', sans-serif;
+  --font-body:    'Barlow', sans-serif;
+
+  /* Spacing */
+  --sp-xs: 4px;
+  --sp-sm: 8px;
+  --sp-md: 16px;
+  --sp-lg: 32px;
+  --sp-xl: 64px;
+
+  /* Transitions */
+  --t-fast: 120ms ease;
+  --t-mid:  250ms ease;
+  --t-slow: 480ms ease;
+
+  /* Height of the dialogue strip while a line is up (published by dialogue.js) */
+  --dlg-h: 0px;
+}
+
+/* ─── RESET ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { height: 100%; }
+
+body {
+  min-height: 100%;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-weight: 300;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  /* A game about not touching things must never respond to a stray
+     double-tap by zooming the whole facility. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ─── ATMOSPHERIC LAYERS ─────────────────────────────────────── */
+.bg-grid {
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(var(--bdr-dim) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bdr-dim) 1px, transparent 1px);
+  background-size: 52px 52px;
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-scanlines {
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 2px,
+    rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.bg-vignette {
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.75) 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ─── TYPOGRAPHY ─────────────────────────────────────────────── */
+.sys-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.accent-r3mi   { color: var(--accent-r3mi); }
+.accent-vtgm   { color: var(--accent-vtgm); }
+.accent-system { color: var(--accent-system); }
+.accent-warn   { color: var(--accent-warn); }
+.accent-error  { color: var(--text-error); }
+
+/* ═══════════════════════════════════════════════════════════════
+   BUTTON SYSTEM — STABLE HITBOXES
+   ═══════════════════════════════════════════════════════════════
+   THE RULE FOR THIS PROJECT:
+
+     A state (:hover / :focus-visible / :active / .hit) may never
+     move, scale or otherwise transform an interactive element
+     itself. Only an inner layer reacts.
+
+   Why: in KA-II's Kapitel 0 the ring keys were positioned with
+   `transform: translate(...)` and the pressed state re-declared
+   `transform: … scale(…)`, which REPLACED the positioning. The
+   button jumped out from under the pointer between `pointerdown`
+   and `pointerup`, so the click was sometimes never delivered.
+
+   Here every button is a bare, fixed hit target. Border, background
+   and the press response live on an inset `::before` sitting at
+   z-index:-1 inside the button's own stacking context. The visible
+   surface can squash all it likes; the hit target does not move.
+
+   This matters more in Pausenprotokoll than anywhere else in the
+   series: the entire game is a judgement about whether to press a
+   button, and a lost click would read as the game cheating.
+   ─────────────────────────────────────────────────────────────── */
+.ka-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-sm);
+  position: relative;
+  isolation: isolate;          /* keeps the z-index:-1 layer inside the button */
+  padding: 12px 26px;
+  min-height: 44px;            /* comfortable touch target on a phone */
+  background: none;
+  border: 0;                   /* the border lives on ::before */
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  transition: color var(--t-fast);
+}
+
+.ka-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border: 1px solid var(--bdr-bright);
+  background: transparent;
+  transition: transform 0.12s ease, border-color var(--t-fast),
+              background var(--t-fast), box-shadow var(--t-fast);
+}
+
+.ka-btn:hover { color: #fff; }
+.ka-btn:hover::before {
+  border-color: var(--accent-system);
+  background: var(--accent-system-lo);
+}
+
+/* Keyboard focus is obvious without anything moving. */
+.ka-btn:focus-visible { outline: none; color: #fff; }
+.ka-btn:focus-visible::before {
+  border-color: var(--accent-system);
+  box-shadow: 0 0 0 2px var(--accent-system);
+}
+
+/* The press: only the inner surface reacts. */
+.ka-btn:active::before,
+.ka-btn.hit::before {
+  background: var(--accent-system-lo);
+  border-color: var(--accent-system);
+  transform: scale(0.97);
+}
+
+.ka-btn.primary { color: var(--accent-vtgm); }
+.ka-btn.primary::before { border-color: var(--accent-vtgm); }
+.ka-btn.primary:hover { color: #fff; }
+.ka-btn.primary:hover::before { border-color: var(--accent-vtgm); background: var(--accent-vtgm-lo); }
+
+.ka-btn.go { color: var(--accent-r3mi); }
+.ka-btn.go::before { border-color: var(--accent-r3mi); }
+.ka-btn.go:hover { color: #fff; }
+.ka-btn.go:hover::before { border-color: var(--accent-r3mi); background: var(--accent-r3mi-lo); }
+
+.ka-btn.small { font-size: 10px; padding: 8px 14px; min-height: 36px; letter-spacing: 0.14em; }
+
+.ka-btn:disabled { opacity: 0.3; pointer-events: none; }
+
+/* ─── UTILITIES ──────────────────────────────────────────────── */
+.hidden { display: none !important; }
+
+.visually-hidden {
+  position: absolute !important; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+@keyframes blink { 0%,50% { opacity: 1; } 51%,100% { opacity: 0; } }
+.blink { animation: blink 1.2s step-end infinite; }
+
+/* ─── SCROLLBAR ──────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb { background: var(--bdr-bright); }

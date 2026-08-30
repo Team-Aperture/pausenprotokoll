@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Die Kalibrierungsanlage: Pausenprotokoll — Ein Zusatzprotokoll von Team_Aperture. Die Anlage untersucht, ob ein Mensch in der Lage ist, nichts zu tun.">
+  <meta name="color-scheme" content="dark">
+  <title>Die Kalibrierungsanlage: Pausenprotokoll</title>
+
+  <!-- Same three typefaces as KA-II. The stacks in base.css fall back to
+       system mono / sans if the request never arrives, so the game is
+       readable offline; it simply looks less like the facility. -->
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&family=Barlow:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/facility.css">
+  <link rel="stylesheet" href="css/game.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <!-- ── ATMOSPHERIC LAYERS ──────────────────────────────────── -->
+  <div class="bg-grid"      aria-hidden="true"></div>
+  <div class="bg-scanlines" aria-hidden="true"></div>
+  <div class="bg-vignette"  aria-hidden="true"></div>
+
+  <!-- ── STATUS CHANGES FOR ASSISTIVE TECHNOLOGY ─────────────── -->
+  <div id="liveRegion" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- ── BOOT ────────────────────────────────────────────────── -->
+  <div class="boot-sequence" id="bootSequence" aria-hidden="true"></div>
+  <button class="ka-btn small boot-skip" id="bootSkip" type="button">[ START ÜBERSPRINGEN ]</button>
+
+  <!-- ── SYSTEM BAR ──────────────────────────────────────────── -->
+  <header class="sys-bar">
+    <span class="sys-text sys-bar-title">
+      KA // NEBENSYSTEM &nbsp;—&nbsp;
+      <span class="accent-system">PAUSENPROTOKOLL</span>
+    </span>
+    <span class="sys-bar-actions">
+      <button class="ka-btn small" id="briefBtn" type="button">[ HINWEISE ]</button>
+      <button class="ka-btn small" id="audioToggle" type="button" aria-pressed="false">[ TON: AN ]</button>
+    </span>
+  </header>
+
+  <!-- ════════════════════════════════════════════════════════════
+       TITLE
+       ════════════════════════════════════════════════════════════ -->
+  <div class="title-card hidden" id="titleCard">
+    <div class="tc-emblem" aria-hidden="true">
+      <div class="tc-ring"></div>
+      <div class="tc-ring tc-ring-2"></div>
+      <div class="tc-pause"><i></i><i></i></div>
+    </div>
+
+    <div class="tc-series">DIE KALIBRIERUNGSANLAGE</div>
+    <h1 class="tc-title">PAUSENPROTOKOLL</h1>
+    <div class="tc-sub">Einrichtung zur Präzisionsregeneration</div>
+
+    <dl class="tc-rows">
+      <dt>Zusatzprotokoll</dt><dd class="ok">ERKANNT</dd>
+      <dt>Testsubjekt</dt>    <dd class="ok">VERFÜGBAR</dd>
+      <dt>Systembelastung</dt><dd>NOMINAL</dd>
+      <dt>Protokoll</dt>      <dd>PAUSE</dd>
+      <dt>Versuchsziel</dt>   <dd class="warn">NICHTS TUN</dd>
+    </dl>
+
+    <div class="res-actions" id="titleActions"></div>
+
+    <p class="sys-text hidden" id="persistNote" style="max-width:34ch;margin-top:var(--sp-md);line-height:1.6">
+      Hinweis: Dieser Browser speichert nichts. Die Pause lässt sich nach
+      einem Neuladen nicht fortsetzen.
+    </p>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       THE EXPERIMENT
+       ════════════════════════════════════════════════════════════ -->
+  <main class="game-shell hidden" id="gameShell">
+
+    <!-- ── STATUS RAIL ───────────────────────────────────────── -->
+    <aside class="rail" aria-label="Versuchsstatus">
+
+      <section class="panel panel-accent panel-stab">
+        <div class="stab-head">
+          <h2 class="panel-label">Pausenstabilität</h2>
+          <div class="stab-value" id="stabValue">100<span class="unit">%</span></div>
+          <div class="stab-track" aria-hidden="true"><div class="stab-fill" id="stabFill"></div></div>
+          <div class="stab-delta" id="stabDelta"></div>
+        </div>
+      </section>
+
+      <section class="panel panel-run">
+        <h2 class="panel-label">Versuchslauf</h2>
+        <dl class="rail-rows">
+          <dt>Abschnitt</dt><dd id="roundName">—</dd>
+          <dt>Restzeit</dt> <dd class="mono-lg" id="roundClock">00:00</dd>
+        </dl>
+      </section>
+
+      <!-- The rule. Appears in Runde 2, stays for the rest of the run. -->
+      <section class="panel rule-card hidden" id="ruleCard">
+        <h2 class="panel-label">Sicherheitsregel</h2>
+        <p class="rule-main">
+          <span class="code">M-NN</span> = Eingriff erforderlich.
+        </p>
+        <p class="rule-note">
+          Alle anderen Meldungen sind während der Pause nur informativ.
+          Darstellung — Farbe, Größe, Lautstärke — ist kein Hinweis auf
+          Dringlichkeit.
+        </p>
+        <p class="rule-note hidden" id="ruleSocial">
+          <b>SOZIAL</b> gilt nicht als Arbeit. Folgenlos.
+        </p>
+      </section>
+
+    </aside>
+
+    <!-- ── MESSAGE FEED ──────────────────────────────────────── -->
+    <section aria-label="Meldungen der Anlage">
+      <div class="feed-head">
+        <h2 class="panel-label" style="margin:0">Meldungen</h2>
+        <span class="sys-text" id="feedBanner"></span>
+      </div>
+
+      <div class="feed" id="feed" role="list"></div>
+
+      <div class="feed-idle" id="feedIdle">Keine Meldungen. Dies ist beabsichtigt.</div>
+    </section>
+
+  </main>
+
+  <!-- ════════════════════════════════════════════════════════════
+       FINAL CALIBRATION — ten seconds of nothing
+       ════════════════════════════════════════════════════════════ -->
+  <div class="final-stage hidden" id="finalStage">
+    <div class="final-label">Abschlusskalibrierung</div>
+    <div class="final-task">NICHTS TUN</div>
+    <div class="final-clock" id="finalClock">00:10</div>
+    <div class="final-ring" aria-hidden="true"><i id="finalRing"></i></div>
+    <div class="final-slot" id="finalSlot"></div>
+    <div class="final-reset-note" id="finalResetNote" role="status" aria-live="polite"></div>
+    <div class="final-hint">Es ist keine Eingabe vorgesehen.</div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       RESULTS
+       ════════════════════════════════════════════════════════════ -->
+  <div class="results hidden" id="results">
+    <div class="res-card" id="resCard"></div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       ENDING
+       ════════════════════════════════════════════════════════════ -->
+  <div class="ending hidden" id="ending">
+    <div id="endingLines" style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-md)"></div>
+  </div>
+  <button class="ka-btn small boot-skip hidden" id="endSkip" type="button" style="opacity:1;pointer-events:auto">[ ÜBERSPRINGEN ]</button>
+
+  <!-- ════════════════════════════════════════════════════════════
+       DIALOGUE STRIP
+       ════════════════════════════════════════════════════════════ -->
+  <div class="dlg-container" id="dlgContainer">
+    <div class="dlg-box" id="dlgBox">
+      <div class="dlg-portrait" id="dlgPortrait" aria-hidden="true"></div>
+      <div class="dlg-body">
+        <div class="dlg-speaker" id="dlgSpeaker"></div>
+        <div class="dlg-text" id="dlgText"></div>
+        <div class="dlg-sub" id="dlgSub"></div>
+        <button class="ka-btn small dlg-advance hidden" id="dlgNext" type="button"
+                style="align-self:flex-end">[ WEITER ]</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       BRIEFING
+       ════════════════════════════════════════════════════════════ -->
+  <div class="overlay-backdrop hidden" id="overlayBackdrop"></div>
+  <div class="overlay-panel hidden" id="briefing" role="dialog" aria-modal="true" aria-labelledby="briefTitle">
+    <div class="overlay-card">
+      <h2 class="overlay-title" id="briefTitle">VERSUCHSHINWEISE</h2>
+      <p class="sys-text">Nebensystem // Pausenprotokoll</p>
+
+      <div class="overlay-content">
+        <p>Die Anlage hat Unterlagen über <b>Pausen</b> gefunden und daraus eine
+           Versuchsreihe abgeleitet. Sie sendet währenddessen Meldungen. Die
+           meisten davon erfordern nichts.</p>
+
+        <p><b>Die Regel:</b> Eine Meldung mit einem Wartungscode — <b>M</b> gefolgt
+           von zwei Ziffern, etwa <b>M-03</b> — erfordert einen Eingriff. Jede andere
+           Meldung ist während der Pause nur informativ.</p>
+
+        <p>Farbe, Größe und Lautstärke einer Meldung sagen <b>nichts</b> darüber aus,
+           ob sie wichtig ist. Das ist Teil des Versuchs.</p>
+
+        <p>Ein unnötiger Eingriff kostet Pausenstabilität. Ein versäumter
+           Wartungscode ebenfalls. Ein Fehler beendet nichts — die Pause läuft
+           weiter, und die Anlage kommentiert.</p>
+
+        <p class="sys-text" style="margin-top:var(--sp-md);color:var(--text-dim)">
+          Ton ist optional. Alles Spielrelevante steht auf dem Bildschirm.
+        </p>
+      </div>
+
+      <button class="ka-btn" id="briefClose" type="button">[ SCHLIESSEN ]</button>
+    </div>
+  </div>
+
+  <!-- ── SCRIPTS ─────────────────────────────────────────────── -->
+  <script src="js/audio.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/dialogue.js"></script>
+  <script src="js/events.js"></script>
+  <script src="js/results.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
