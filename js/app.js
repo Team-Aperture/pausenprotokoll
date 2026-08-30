@@ -51,14 +51,27 @@
     setTimeout(() => actions.querySelector('.caf-btn')?.focus(), 900);
   }
 
-  /* Fly into the terminal, then start the experiment on its screen. */
+  /* Hear why the break is happening, then fly into the terminal.
+     Resuming an interrupted run skips the explanation — you have
+     already had it. */
   function begin(resumeRun) {
     PPAudio.resume();
     PPAudio.hum.start();          // the room has been humming all along
-    PPCafeteria.approach(() => {
+    PPMusic.start();
+
+    const fly = () => PPCafeteria.approach(() => {
       document.getElementById('gameShell').classList.remove('hidden');
       PPGame.start(resumeRun);
     });
+
+    if (resumeRun && resumeRun.round > 0) {
+      PPCafeteria.playIntro(null);
+      PPDialogue.silence();
+      PPMusic.setMuffled(false, 1.4);
+      fly();
+    } else {
+      PPCafeteria.playIntro(fly);
+    }
   }
 
   /* ═══ BRIEFING OVERLAY ══════════════════════════════════════════
@@ -94,8 +107,14 @@
     PPDialogue.init();
     PPGame.init();
 
+    PPMusic.init();
     PPAudio.setMuted(!!PPState.setting('muted'));
     paintAudioBtn();
+
+    // The menu hears the track through the wall; starting the break
+    // opens the filter up.
+    PPMusic.setMuffled(true, 0);
+    PPMusic.start();
 
     document.querySelectorAll('.js-audio').forEach(b => b.addEventListener('click', () => {
       const muted = PPAudio.toggleMute();
@@ -114,7 +133,7 @@
 
     // Browsers only allow audio after a gesture; wake the context on the
     // first one, whatever it was.
-    const wake = () => PPAudio.resume();
+    const wake = () => { PPAudio.resume(); PPMusic.retry(); };
     document.addEventListener('pointerdown', wake);
     document.addEventListener('keydown', wake);
 
@@ -136,6 +155,8 @@
         // Back out to the cafeteria, and the menu rebuilds itself.
         document.getElementById('gameShell').classList.add('hidden');
         PPAudio.hum.stop();
+        PPMusic.hush(false, 1.2);
+        PPMusic.setMuffled(true, 1.6);   // back behind the wall
         PPCafeteria.reset();
         showMenu(null);
       }

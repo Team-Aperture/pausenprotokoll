@@ -64,9 +64,9 @@ const PPAudio = (() => {
   /* ── Speech chirps. Same voices as KA-II, so the two units sound
         like themselves. ─────────────────────────────────────────── */
   const VOICE = {
-    'R-3MI':  { base: 520, type: 'square',   spread: 70, vol: 0.10 },
-    'V-TGM':  { base: 340, type: 'triangle', spread: 90, vol: 0.17 },
-    'SYSTEM': { base: 300, type: 'triangle', spread: 0,  vol: 0.09 },
+    'R-3MI':  { base: 520, type: 'square',   spread: 70, vol: 0.15 },
+    'V-TGM':  { base: 340, type: 'triangle', spread: 90, vol: 0.23 },
+    'SYSTEM': { base: 300, type: 'triangle', spread: 0,  vol: 0.13 },
   };
   function blip(speaker) {
     const v = VOICE[speaker] || VOICE['SYSTEM'];
@@ -177,6 +177,8 @@ const PPAudio = (() => {
   function setMuted(m) {
     muted = !!m;
     hum._applyMute(muted);
+    // One switch owns everything that makes noise, music included.
+    try { PPMusic.applyMute(); } catch (_) {}
   }
   function isMuted() { return muted; }
   function toggleMute() {
@@ -186,6 +188,7 @@ const PPAudio = (() => {
   }
 
   return {
+    ensureCtx: ensure,
     resume, tone, blip, click,
     notify, alarm, maintenance,
     good, wrong, award, klonk, spill, tick,

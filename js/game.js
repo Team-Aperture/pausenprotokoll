@@ -426,6 +426,7 @@ const PPGame = (() => {
     live = [];
     PPDialogue.silence();
     PPAudio.hum.silence();
+    PPMusic.hush(true, 2.6);       // the silence IS the test
     PPState.saveRun({ round: rounds.length, stability, stats });
 
     el.shell.classList.add('hidden');
