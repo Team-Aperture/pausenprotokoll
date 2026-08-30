@@ -5,7 +5,10 @@
    ═══════════════════════════════════════════════════════════════ */
 
 .game-shell {
-  position: relative;
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
   z-index: 5;
   max-width: 1180px;
   margin: 0 auto;
@@ -14,7 +17,9 @@
   grid-template-columns: 280px 1fr;
   gap: var(--sp-lg);
   align-items: start;
-  min-height: 100vh;
+  /* The shell fills the SCREEN, not the browser window — it sits inside
+     the monitor now, and 100vh would overflow the bezel. */
+  min-height: 100%;
   /* keep the feed clear of the dialogue strip while a line is up */
   padding-bottom: calc(var(--sp-lg) + var(--dlg-h));
   transition: padding-bottom var(--t-mid);
