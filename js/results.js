@@ -25,7 +25,7 @@ const PPResults = (() => {
       test: (s, st) => !!st.poweredOff,
     },
     {
-      id: 'S', letter: 'S', name: 'PROFESSIONELLER NICHTSTUER',
+      id: 'Aplus', letter: 'A+', name: 'PROFESSIONELLER NICHTSTUER',
       color: 'var(--accent-r3mi)',
       note: 'KEINE UNNÖTIGE TÄTIGKEIT. KEINE VERSÄUMTE WARTUNG. DIE ANLAGE HAT NICHTS ZU BEANSTANDEN UND WEISS DAMIT NICHTS ANZUFANGEN.',
       test: (s, st) => s >= 95 && st.missed === 0 && st.unnecessary === 0,
@@ -60,7 +60,7 @@ const PPResults = (() => {
      Five, deliberately. This is a spin-off, not an achievement list. */
   const AWARDS = [
     { id: 'prof',   name: 'PROFESSIONELLER NICHTSTUER', desc: 'RANG S ERREICHT.',
-      test: (s, st, rank) => rank.id === 'S' },
+      test: (s, st, rank) => rank.id === 'Aplus' },
     // These two are about parts of the protocol you have to actually
     // reach. Switching the monitor off half way is its own reward and
     // does not quietly collect the others on the way past.
@@ -141,7 +141,11 @@ const PPResults = (() => {
     `;
 
     view.classList.remove('hidden');
-    PPMusic.hush(false, 2.0);       // and back in for the verdict
+    // Back in for the verdict, but through the wall again — the same
+    // treatment the menu gets, because both are moments to read rather
+    // than moments to be in.
+    PPMusic.hush(false, 2.0);
+    PPMusic.setMuffled(true, 1.8);
     document.getElementById('resContinue').addEventListener('click', () => {
       view.classList.add('hidden');
       ending(stats, rank);
@@ -158,7 +162,7 @@ const PPResults = (() => {
     if (rank.id === 'D') {
       lines.push({ speaker: 'R-3MI', text: '„HEY.“' });
       lines.push({ speaker: 'V-TGM', text: 'Accurate.', sub: 'Zutreffend.' });
-    } else if (rank.id === 'S') {
+    } else if (rank.id === 'Aplus') {
       lines.push({ speaker: 'V-TGM', text: 'You did nothing. Perfectly.', sub: 'Du hast nichts getan. Perfekt.' });
       lines.push({ speaker: 'R-3MI', text: '„Ich möchte betonen, dass ich daran beteiligt war.“' });
     } else if (stats.missed > 0 && stats.unnecessary > 0) {
@@ -208,7 +212,8 @@ const PPResults = (() => {
         { speaker: 'V-TGM', text: 'I did.', sub: 'Habe ich.' },
         { speaker: 'R-3MI', text: '„Das durfte man?“' },
         { speaker: 'V-TGM', text: 'It is a break, Remi. Nobody has to reach us.', sub: 'Es ist eine Pause, Remi. Niemand muss uns erreichen.' },
-        { speaker: 'R-3MI', text: '„…“' },
+        // A pause, not a quotation. R-3MI has stopped talking.
+        { speaker: 'R-3MI', text: '…' },
         { speaker: 'R-3MI', text: '„Ich sitze einfach mal hier.“' },
         { speaker: 'V-TGM', text: 'There you go.', sub: 'Na also.' },
       ], { auto: true });
@@ -260,6 +265,7 @@ const PPResults = (() => {
   }
 
   function endingNormal(stats, rank) {
+    PPMusic.setMuffled(false, 2.4);
     PPDialogue.silence();
     const view = document.getElementById('ending');
     const box  = document.getElementById('endingLines');
@@ -294,7 +300,9 @@ const PPResults = (() => {
       ], { auto: true });
     }, 5600);
 
-    // The facility answers that with a number.
+    // The facility answers that with a number — and then, because it is
+    // a facility, it starts counting it down in front of you. A frozen
+    // clock reads as a graphic; a running one reads as a sentence.
     setTimeout(() => {
       box.innerHTML = '';
       const label = document.createElement('div');
@@ -302,11 +310,11 @@ const PPResults = (() => {
       label.textContent = 'NÄCHSTE GENEHMIGTE PAUSE IN:';
       const clock = document.createElement('div');
       clock.className = 'end-clock';
-      clock.textContent = '05:59:59';
       box.appendChild(label);
       box.appendChild(clock);
       requestAnimationFrame(() => { label.classList.add('visible'); clock.classList.add('visible'); });
       PPAudio.klonk();
+      startCountdown(clock);
     }, 15000);
 
     setTimeout(() => {
@@ -329,7 +337,7 @@ const PPResults = (() => {
       const c = document.createElement('div');
       c.className = 'end-line thanks';
       c.textContent = 'Danke fürs Nichtstun.';
-      const d = coordBlock();
+      const d = coordBlock(rank);
       [a, b, c, d].forEach((n, k) => {
         box.appendChild(n);
         setTimeout(() => n.classList.add('visible'), 200 + k * 700);
@@ -375,9 +383,23 @@ const PPResults = (() => {
   const ZIELDATEN = 'N 00° 00.000 · E 000° 00.000';
   /* ▲▲▲  ECHTE CACHE-KOORDINATEN HIER EINTRAGEN  ▲▲▲               */
 
-  function coordBlock() {
+  /* Ranks that count as having passed. Below B the break was not
+     survived in any meaningful sense, and the Anlage does not hand out
+     Zieldaten for a protocol it considers failed. */
+  const PASSING = ['Aplus', 'A', 'B'];
+
+  function coordBlock(rank) {
     const wrap = document.createElement('div');
     wrap.className = 'end-line end-coords';
+
+    if (rank && PASSING.indexOf(rank.id) < 0) {
+      wrap.classList.add('ec-denied');
+      wrap.innerHTML = '<div class="ec-label">ZIELDATEN NICHT FREIGEGEBEN</div>'
+        + '<div class="ec-denied-text">BEWERTUNG UNTERHALB DER FREIGABESCHWELLE (RANG B).<br>'
+        + 'DIE PAUSE GILT ALS NICHT BESTANDEN.<br>'
+        + 'EINE WIEDERHOLUNG IST JEDERZEIT MÖGLICH.</div>';
+      return wrap;
+    }
 
     const label = document.createElement('div');
     label.className = 'ec-label';
@@ -421,12 +443,39 @@ const PPResults = (() => {
     return wrap;
   }
 
-  function setReplayHandler(fn) { onReplay = fn; }
+  /* Six hours, counting. Stops itself when the element leaves the page,
+     so a replay never leaves a stray timer running. */
+  let countdownTimer = null;
+  function startCountdown(el) {
+    stopCountdown();
+    let left = 6 * 3600 - 1;                 // 05:59:59
+    const paint = () => {
+      const h = Math.floor(left / 3600);
+      const m = Math.floor((left % 3600) / 60);
+      const s = left % 60;
+      el.textContent = [h, m, s].map(n => String(n).padStart(2, '0')).join(':');
+    };
+    paint();
+    countdownTimer = setInterval(() => {
+      if (!el.isConnected) { stopCountdown(); return; }
+      if (left > 0) left--;
+      paint();
+    }, 1000);
+  }
+  function stopCountdown() {
+    if (countdownTimer) clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+
+  function setReplayHandler(fn) {
+    onReplay = (kind) => { stopCountdown(); fn(kind); };
+  }
 
   /* Jump straight to the buttons at the end of the ending. */
-  function skipEnding(poweredOff) {
+  function skipEnding(poweredOff, rank) {
     const box = document.getElementById('endingLines');
     box.innerHTML = '';
+    stopCountdown();
     PPDialogue.silence();
     const a = document.createElement('div');
     a.className = 'end-line dim visible';
@@ -444,7 +493,7 @@ const PPResults = (() => {
       co.innerHTML = '<div class="ec-label">ZIELDATEN NICHT FREIGEGEBEN</div>'
                    + '<div class="ec-denied-text">WER DIE ANLAGE ABSCHALTET, BEKOMMT KEINE KOORDINATEN.</div>';
     } else {
-      co = coordBlock();
+      co = coordBlock(rank);
       co.classList.add('visible');
     }
     const row = document.createElement('div');

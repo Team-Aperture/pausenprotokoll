@@ -266,20 +266,28 @@
             </dl>
           </section>
 
-          <!-- The rule. Appears in Runde 2, stays for the rest of the run. -->
+          <!-- The rules. The first arrives in Runde 2; three more join it
+               in Rundes 3, 4 and 5, and each stays for the rest of the run.
+               What is deliberately NOT written here any more: that colour
+               and size mean nothing. That one the player gets to work out,
+               which is the difference between reading a manual and playing
+               a game about being trolled by a facility. -->
           <section class="panel rule-card hidden" id="ruleCard">
-            <h2 class="panel-label">Sicherheitsregel</h2>
+            <h2 class="panel-label">Sicherheitsregeln</h2>
             <p class="rule-main">
               <span class="code">M-NN</span> = Eingriff erforderlich.
             </p>
-            <p class="rule-note">
-              Alle anderen Meldungen sind während der Pause nur informativ.
-              Darstellung — Farbe, Größe, Lautstärke — ist kein Hinweis auf
-              Dringlichkeit.
-            </p>
-            <p class="rule-note hidden" id="ruleSocial">
-              <b>SOZIAL</b> gilt nicht als Arbeit. Folgenlos.
-            </p>
+            <ul class="rule-list">
+              <!-- Each rule carries a long form and a short one. A phone
+                   gets the short one: four rules that each wrap to two
+                   lines cost more vertical room than the messages they
+                   are about. -->
+              <li class="rule-extra hidden" id="ruleErledigt"><b>ERLEDIGT</b><span class="rx-long">— kein Eingriff.</span><span class="rx-short">nein</span></li>
+              <li class="rule-extra hidden" id="ruleHalten"><b>HALTEN</b><span class="rx-long">— gedrückt halten.</span><span class="rx-short">halten</span></li>
+              <li class="rule-extra hidden" id="ruleWiderruf"><b>WIDERRUFEN</b><span class="rx-long">— kein Eingriff.</span><span class="rx-short">nein</span></li>
+              <li class="rule-extra hidden" id="ruleSocial"><b>SOZIAL</b><span class="rx-long">— keine Arbeit.</span><span class="rx-short">frei</span></li>
+            </ul>
+            <p class="rule-note">Alle anderen Meldungen sind nur informativ.</p>
           </section>
 
         </aside>
@@ -359,6 +367,22 @@
        menu opened a panel nobody could see.
        ════════════════════════════════════════════════════════════ -->
   <div class="overlay-backdrop hidden" id="overlayBackdrop"></div>
+  <!-- ════════════════════════════════════════════════════════════
+       ERFOLGE — what the facility has filed about you so far.
+       Persisted across runs; a locked entry still shows what it is
+       for, because a list of question marks is not an invitation.
+       ════════════════════════════════════════════════════════════ -->
+  <div class="overlay-panel hidden" id="awards" role="dialog" aria-modal="true" aria-labelledby="awardsTitle">
+    <div class="overlay-card">
+      <h2 class="overlay-title" id="awardsTitle">ERFOLGE</h2>
+      <p class="sys-text" id="awardsCount"></p>
+      <div class="overlay-content">
+        <ul class="award-list" id="awardList"></ul>
+      </div>
+      <button class="ka-btn" id="awardsClose" type="button">[ SCHLIESSEN ]</button>
+    </div>
+  </div>
+
   <div class="overlay-panel hidden" id="briefing" role="dialog" aria-modal="true" aria-labelledby="briefTitle">
     <div class="overlay-card">
       <h2 class="overlay-title" id="briefTitle">VERSUCHSHINWEISE</h2>
@@ -373,8 +397,8 @@
            von zwei Ziffern, etwa <b>M-03</b> — erfordert einen Eingriff. Jede andere
            Meldung ist während der Pause nur informativ.</p>
 
-        <p>Farbe, Größe und Lautstärke einer Meldung sagen <b>nichts</b> darüber aus,
-           ob sie wichtig ist. Das ist Teil des Versuchs.</p>
+        <p>Die Anlage ergänzt diese Regel im Verlauf des Versuchs. Neue Regeln
+           erscheinen links, sobald sie gelten.</p>
 
         <p>Ein unnötiger Eingriff kostet Pausenstabilität. Ein versäumter
            Wartungscode ebenfalls. Ein Fehler beendet nichts — die Pause läuft

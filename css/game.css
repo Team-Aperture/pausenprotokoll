@@ -111,6 +111,42 @@
   border-top: 1px solid var(--bdr-dim);
 }
 
+/* The rules the facility adds as it goes. One per line with room for
+   it; two-up once there is not. */
+.rule-list {
+  list-style: none;
+  margin: var(--sp-sm) 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.rule-list:empty { display: none; }
+.rule-extra {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.45;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+.rx-short { display: none; }
+.rule-extra b {
+  color: var(--accent-warn);
+  font-weight: 400;
+  border: 1px solid var(--accent-warn);
+  padding: 0 4px;
+  margin-right: 3px;
+  white-space: nowrap;
+}
+/* a rule that has just been added announces itself once */
+.rule-extra.fresh { animation: ruleIn 0.6s ease both; }
+@keyframes ruleIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rule-extra.fresh { animation: none; }
+}
+
 /* ═══ MESSAGE FEED ══════════════════════════════════════════════ */
 .feed-head {
   display: flex;
@@ -312,7 +348,7 @@
 .final-stage {
   position: fixed; inset: 0;
   z-index: 420;
-  background: var(--bg-deep);
+  background: var(--screen-bg, var(--bg-deep));
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   gap: var(--sp-lg);
@@ -392,9 +428,13 @@
 
 /* ═══ RESULTS ═══════════════════════════════════════════════════ */
 .results {
-  position: fixed; inset: 0;
+  /* Clipped to the monitor's measured rectangle so the verdict still
+     appears ON the screen, even though the element lives outside it.
+     Set here rather than in cafeteria.css: game.css loads later, and an
+     `inset: 0` here would quietly win the cascade and un-clip it. */
+  position: fixed; inset: var(--screen-inset, 0);
   z-index: 430;
-  background: var(--bg-deep);
+  background: var(--screen-bg, var(--bg-deep));
   overflow-y: auto;
   padding: var(--sp-lg) var(--sp-md);
   display: flex; align-items: flex-start; justify-content: center;
@@ -439,9 +479,9 @@
 
 /* ═══ ENDING ════════════════════════════════════════════════════ */
 .ending {
-  position: fixed; inset: 0;
+  position: fixed; inset: var(--screen-inset, 0);
   z-index: 440;
-  background: var(--bg-deep);
+  background: var(--screen-bg, var(--bg-deep));
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   gap: var(--sp-md);
@@ -513,3 +553,48 @@
   font-family: var(--font-mono); font-size: 11px; line-height: 1.8;
   letter-spacing: 0.12em; color: var(--text-secondary); text-transform: uppercase;
 }
+
+/* ─── HOLD TO CONFIRM ────────────────────────────────────────────
+   A maintenance code that wants sustained contact. The fill grows
+   inside the button; the button itself does not move, same rule as
+   everywhere else in this game. */
+.evt-action.needs-hold::after {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: var(--hold, 0%);
+  background: rgba(46,207,98,0.22);
+  border-right: 1px solid var(--accent-r3mi);
+  pointer-events: none;
+  transition: opacity var(--t-fast);
+}
+.evt-action.needs-hold:not(.holding)::after { opacity: 0; }
+.evt-action.needs-hold.holding::before { border-color: var(--accent-r3mi); }
+
+.evt-holdhint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--accent-warn);
+  min-height: 1.1em;
+  text-transform: uppercase;
+}
+
+/* ─── A CODE THAT HAS BEEN WITHDRAWN ─────────────────────────────
+   Struck through rather than removed: the player has to SEE that the
+   thing they were about to deal with is no longer their problem. */
+.evt.revoked { opacity: .72; }
+.evt.revoked .evt-head { text-decoration: line-through; text-decoration-thickness: 1px; }
+.evt.revoked .evt-chip { color: var(--text-dim); }
+.evt.revoked .evt-action { color: var(--text-dim); }
+.evt.revoked .evt-action::before { border-style: dashed; }
+
+/* the revocation notice itself */
+.evt.tone-revoke { border-left-color: var(--text-dim); }
+.evt.tone-revoke .evt-chip { color: var(--text-dim); }
+.evt.tone-revoke .evt-head { color: var(--text-secondary); font-size: 14px; }
+
+/* a maintenance code that was already dealt with by somebody else */
+.evt.tone-closed { border-left-color: var(--bdr-bright); }
+.evt.tone-closed .evt-chip { color: var(--text-secondary); }
+.evt.tone-closed .evt-head { color: var(--text-secondary); }

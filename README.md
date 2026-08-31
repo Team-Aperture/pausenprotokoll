@@ -88,6 +88,26 @@ würde der Oberfläche weiterhin 1440 px zusprechen, während sie tatsächlich
 
 ---
 
+## Bewertung
+
+| Rang | Name | |
+|---|---|---|
+| **S** | BITTE NICHT STÖREN | nur über den Netzschalter erreichbar |
+| **A+** | PROFESSIONELLER NICHTSTUER | fehlerfreier Durchlauf |
+| **A** | VOLLSTÄNDIG ERHOLT | kein Wartungscode verpasst |
+| **B** | LEICHT ARBEITSSÜCHTIG | Freigabeschwelle |
+| **C** | PAUSE NICHT VERSTANDEN | keine Zieldaten |
+| **D** | R-3MI | keine Zieldaten |
+
+Es gibt genau **ein** S, und das bekommt man nicht durchs Spielen. Unterhalb
+von **B** gilt die Pause als nicht bestanden und die Anlage rückt die
+Koordinaten nicht heraus — eine Wiederholung ist jederzeit möglich.
+
+Auf dem Hauptmenü listet **[ ERFOLGE ]** alle Auszeichnungen, erreichte wie
+offene, über Durchläufe hinweg gespeichert.
+
+---
+
 ## Zieldaten
 
 Am Ende des Abspanns stehen die Koordinaten, wie im Rest der Reihe: sichtbar,
@@ -122,6 +142,11 @@ Einziges noch Licht an.
 
 ## Musik
 
+Die Datei liegt unter `assets/music/kantine-loop.mp3` — zum Wechseln einfach
+ersetzen, der Code kennt nur diesen Pfad. Ein kurzer Loop (30–60 s) reicht
+völlig: Der Track wird gefiltert, geduckt und geblendet, er muss die Szene
+nicht allein tragen.
+
 Ein Loop, durch den Web-Audio-Graph geführt, damit er geformt statt nur
 lauter und leiser gemacht werden kann:
 
@@ -132,6 +157,8 @@ lauter und leiser gemacht werden kann:
   absichtlich leise; statt sie lauter zu drehen — was sie nörgelig machen
   würde — geht die Musik aus dem Weg, solange jemand spricht. Die Stimmen
   selbst wurden zusätzlich leicht angehoben.
+* **Gedämpft** auch auf der Auswertung — wie im Menü, weil beides Momente zum
+  Lesen sind und nicht zum Drinsein.
 * **Verstummt** für die Abschlusskalibrierung. Der Brief ist da eindeutig:
   Stille ist dort Spielmechanik. Der Track verschwindet ganz und kommt zur
   Auswertung zurück.
@@ -153,10 +180,9 @@ scheinbare Notfälle. Die meisten davon erfordern nichts. Einige wenige schon.
 > Wartungscode der Form **M-NN** trägt. Alle anderen Meldungen sind
 > während der Pause nur informativ.
 
-Farbe, Größe und Lautstärke sagen nichts über Wichtigkeit aus — das ist
-ausdrücklich Teil des Versuchs. Eine Fehlmeldung darf riesig, scharlachrot und
-mit `KRITISCH` überschrieben sein; ein echter Wartungscode darf klein und grau
-sein.
+Ob Farbe, Größe und Lautstärke etwas bedeuten, steht **nirgends im Spiel**.
+Das darf der Spieler selbst herausfinden — es ist ein Trollspiel, und die
+Erkenntnis ist der halbe Spaß.
 
 Damit das kein Ratespiel wird, ist die Regel **strukturell erzwungen** und nicht
 von Hand gepflegt: `PPEvents.verify()` in `js/events.js` läuft bei jedem Start
@@ -164,13 +190,33 @@ und prüft, dass keine Nicht-Intervention irgendwo das Muster `M-<Ziffer>`
 enthält und dass jede Intervention einen wohlgeformten Code trägt. Ein neuer
 Witz, der die Regel bricht, meldet sich sofort in der Konsole.
 
+### Die Regeln kommen nach und nach
+
+Runde 2 lehrt die Grundregel. Danach ergänzt die Anlage sie dreimal, jeweils
+**vor** der Runde, die sie prüft — eine Regel, die man zum ersten Mal als Strafe
+kennenlernt, wäre ein Gotcha, und die macht dieses Spiel nicht.
+
+| Runde | Neue Regel | Was sie bringt |
+|---|---|---|
+| 3 | **ERLEDIGT** | Ein Wartungscode, der bereits bearbeitet wurde. Trägt einen echten M-Code und braucht **nichts**. Lehre: die ganze Zeile lesen, nicht auf das Präfix mustern. |
+| 4 | **HALTEN** | Ein Wartungscode, der dauerhaften Kontakt verlangt. Antippen genügt nicht — und wird auch nicht bestraft, sondern erklärt. |
+| 5 | **WIDERRUFEN** | Die Anlage nimmt eine eigene Meldung zurück. Danach ist ein Eingriff unnötige Arbeit. |
+
+Runde 6 ist der Parcours und benutzt alles davon gleichzeitig.
+
+Der Zusatz steht dabei auf dem **Chip** neben dem Code, nicht am Ende der
+Überschrift: Dort schaut der Spieler ohnehin hin, und eine gekürzte Überschrift
+kann so nie das verstecken, worauf es ankommt.
+
 ### Kategorien
 
 | Kategorie      | Chip     | Schaltfläche | Richtige Reaktion | Bei Fehler |
 |----------------|----------|--------------|-------------------|------------|
 | `INFO`         | MESSWERT | keine        | nichts tun        | — |
 | `DISTRACTION`  | frei     | ja           | ignorieren        | Drücken: −5 % |
-| `INTERVENTION` | `M-NN`   | ja           | drücken           | Verstreichen lassen: −8 % |
+| `INTERVENTION` | `M-NN`   | ja           | drücken (ggf. halten) | Verstreichen lassen: −8 % |
+| `CLOSED`       | `M-NN ERLEDIGT` | ja    | ignorieren        | Drücken: −5 % |
+| `REVOKE`       | `M-NN`   | nein         | —                 | stellt einen laufenden Code still |
 | `SPECIAL`      | SOZIAL   | ja           | freie Wahl        | folgenlos |
 
 `SOZIAL` gilt nicht als Arbeit — die Anlage stuft Zuwendung gegenüber R-3MI
@@ -271,8 +317,8 @@ Auf dem Telefon gilt zusätzlich eine gemessene Zusage: **jede Schaltfläche ein
 noch offenen Meldung ist ohne Scrollen erreichbar.** Dafür sind gleichzeitig
 höchstens zwei Meldungen offen, erledigte Karten klappen auf ihre Bewertung
 zusammen, und die Regelkarte zeigt ihre tragende Zeile. Über eine vollständige
-Sitzung auf 360×640 und 360×740 liegt die tiefste Schaltflächenkante bei 627 px
-bzw. 656 px — keine einzige unter dem Falz. Auf dem Telefon schrumpft der
+Sitzung auf 360×640 und 360×740 liegt die tiefste Schaltflächenkante bei 625 px
+bzw. 659 px — keine einzige unter dem Falz. Auf dem Telefon schrumpft der
 Kantinenrahmen dafür auf 4 px: Die Spielfläche geht vor.
 
 Die Reihenfolge der Meldungen wird dabei **nie** zugunsten echter Codes

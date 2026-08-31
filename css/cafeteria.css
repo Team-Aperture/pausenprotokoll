@@ -592,11 +592,10 @@
 .overlay-panel    { z-index: 961; }
 
 /* The results and the ending sit above the room but BELOW the units,
-   so R-3MI and V-TGM keep commenting over their own verdict. Both are
-   clipped to the monitor's measured rectangle so they still read as
-   being on the screen. */
-.results { z-index: 930; inset: var(--screen-inset, 0); }
-.ending  { z-index: 940; inset: var(--screen-inset, 0); }
+   so R-3MI and V-TGM keep commenting over their own verdict. The
+   clipping itself is declared in game.css, which loads later. */
+.results { z-index: 930; }
+.ending  { z-index: 940; }
 /* Monitor off: the assessment moves into the room — and lets the room
    show through, because that is the whole point of having switched the
    thing off. Warm, not the facility's cold black. */
