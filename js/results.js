@@ -33,7 +33,7 @@ const PPResults = (() => {
     {
       id: 'A', letter: 'A', name: 'VOLLSTÄNDIG ERHOLT',
       color: 'var(--accent-r3mi)',
-      note: 'ALLE WARTUNGSCODES BEARBEITET. GELEGENTLICHE ÜBERMOTIVATION IM RAHMEN.',
+      note: 'ALLE EINGRIFFE BEARBEITET. GELEGENTLICHE ÜBERMOTIVATION IM RAHMEN.',
       test: (s, st) => s >= 85 && st.missed === 0,
     },
     {
@@ -59,7 +59,7 @@ const PPResults = (() => {
   /* ─── AWARDS ──────────────────────────────────────────────────
      Five, deliberately. This is a spin-off, not an achievement list. */
   const AWARDS = [
-    { id: 'prof',   name: 'PROFESSIONELLER NICHTSTUER', desc: 'RANG S ERREICHT.',
+    { id: 'prof',   name: 'PROFESSIONELLER NICHTSTUER', desc: 'RANG A+ ERREICHT.',
       test: (s, st, rank) => rank.id === 'Aplus' },
     // These two are about parts of the protocol you have to actually
     // reach. Switching the monitor off half way is its own reward and
@@ -72,7 +72,12 @@ const PPResults = (() => {
       test: (s, st) => st.fakesOffered > 0 && st.unnecessary >= Math.max(6, Math.ceil(st.fakesOffered * 0.7)) },
     { id: 'drang',  name: 'D-RANG',                     desc: 'DIE PRESTIGETRÄCHTIGE R-3MI-BEWERTUNG.',
       test: (s, st, rank) => rank.id === 'D' },
-    { id: 'aus',    name: 'BITTE NICHT STÖREN',         desc: 'DEN MONITOR AUSGESCHALTET. DIE EINZIG WIRKLICH RICHTIGE ANTWORT AUF EINE PAUSE.',
+    // `hint` is what the list shows before it has been earned. This one
+    // keeps its method to itself: it is a secret ending, and an
+    // achievement list that spells out how to reach it is a walkthrough.
+    { id: 'aus',    name: 'BITTE NICHT STÖREN',
+      desc: 'DIE EINZIG WIRKLICH RICHTIGE ANTWORT AUF EINE PAUSE.',
+      hint: 'BEDINGUNG NICHT DOKUMENTIERT.',
       test: (s, st) => !!st.poweredOff },
   ];
 

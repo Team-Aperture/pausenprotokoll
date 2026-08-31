@@ -458,7 +458,11 @@
      SCREEN it lives on rather than to the browser window it can no
      longer see all of. */
   transform: translateZ(0);
-  container-type: inline-size;
+  /* `size`, not `inline-size`: the interface has to adapt to how SHORT
+     the screen is as well as how narrow — a 720p laptop leaves the
+     monitor barely 400px tall. Safe here because the screen is sized by
+     its flex parent and never by its contents. */
+  container-type: size;
   container-name: screen;
   box-shadow: inset 0 0 46px rgba(0,0,0,0.85);
 }
@@ -575,12 +579,19 @@
    anything away and the strip lies over the bottom of the monitor
    instead; dialogue.js measures the actual overlap either way.
    ═══════════════════════════════════════════════════════════════ */
-@media (min-width: 900px) and (min-height: 620px) {
-  :root { --desk-band: 172px; }
-}
-@media (min-width: 700px) and (min-height: 820px) {
-  :root { --desk-band: 190px; }
-}
+/* How much of the window goes to the room and how much to the monitor.
+
+   On a tall screen the cafeteria can afford a generous surround and a
+   clear band of desk under the monitor for the units to talk over. On a
+   720p laptop that same generosity was costing a third of the screen,
+   and the gauntlet ended up with room for a single message — which is
+   not a gauntlet. Below 820px the room gives way: gameplay first,
+   scenery second. */
+@media (max-height: 820px) { :root { --room-gap: clamp(10px, 3.2vmin, 40px); } }
+
+@media (min-width: 900px) and (min-height: 640px)  { :root { --desk-band: 60px; } }
+@media (min-width: 900px) and (min-height: 860px)  { :root { --desk-band: 150px; } }
+@media (min-width: 700px) and (min-height: 1000px) { :root { --desk-band: 186px; } }
 
 /* The strip belongs to the room, so it clears the monitor and gets a
    little warmth under it — but the box itself stays facility issue,
@@ -608,9 +619,16 @@
 
 .dlg-container {
   z-index: 950;
+  /* The strip is a full-width positioning wrapper sitting on top of the
+     desk. Left solid it swallowed every click in that band — including
+     the monitor's power switch, which sits on the plate directly
+     underneath it. Only the visible box takes input; the empty space to
+     either side of it belongs to the room. */
+  pointer-events: none;
   padding-bottom: calc(var(--sp-md) + env(safe-area-inset-bottom, 0px));
 }
 .dlg-container .dlg-box {
+  pointer-events: auto;
   border-bottom: 1px solid var(--bdr-mid);
   box-shadow: 0 -6px 34px rgba(0,0,0,0.6), 0 0 44px rgba(255,170,80,0.05);
 }

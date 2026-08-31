@@ -32,6 +32,8 @@ const PPGame = (() => {
   let ruleVisible = false;
   let socialExplained = false;
   let running = false;
+  let finished = false;        // the run has produced its result
+  let cancelFinal = null;      // tears down the final calibration
 
   /* ─── small helpers ───────────────────────────────────────────── */
   const now = () => performance.now();
@@ -41,18 +43,44 @@ const PPGame = (() => {
     try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
     catch (_) { return false; }
   }
-  /* How many messages may share the screen.
-     On a phone this is 2, not 3. The finale is supposed to LOOK
-     overwhelming, but every button it puts up must still be reachable
-     without scrolling — and three stacked cards push the oldest one's
-     button below the fold on a 360×640 device. Two cards keep the
-     whole feed on screen; the round still feels frantic because the
-     turnover is fast, not because the pile is deep.
-     Note the pile is never re-ordered to favour genuine codes: that
-     would make position a tell, and position must mean nothing. */
+  /* ═══════════════════════════════════════════════════════════════
+     HOW MANY MESSAGES MAY SHARE THE SCREEN
+
+     Measured, not guessed. This used to be a function of window width,
+     which was only ever a proxy: the constraint is how much room the
+     feed actually has underneath it, and that depends on the monitor's
+     height, the layout the screen picked, how tall the rule card has
+     grown, and whether the dialogue strip is currently lying over the
+     bottom of the screen. A 1024×768 window is wide enough to have
+     scored three cards by the old rule and had space for one.
+
+     So it asks. Whatever the layout is doing, the pile is capped at
+     what fits — which is what makes "every button is reachable without
+     scrolling" a property of the game rather than a set of constants
+     that happened to hold last time it was measured.
+
+     A genuine intervention is NEVER culled to make room; noise is
+     dropped first, oldest first. The pile is never re-ordered to
+     favour real codes either: position must mean nothing.
+     ═══════════════════════════════════════════════════════════════ */
+  /* An estimate, not a promise. The cap decides PACING — how busy the
+     finale is allowed to look — while trimToFit() below is what
+     actually guarantees every button stays reachable. Estimating with a
+     compact card keeps the screen lively; if the cards turn out taller
+     than this, the trim quietly takes one away. */
+  const CARD_ROOM = 132;
   function cardCap() {
-    const w = window.innerWidth;
-    return w < 640 ? 2 : w < 900 ? 3 : 4;
+    let room = 0;
+    try {
+      const feedTop = el.feed.getBoundingClientRect().top;
+      const screen  = document.getElementById('deckScreen');
+      const bottom  = screen ? screen.getBoundingClientRect().bottom : window.innerHeight;
+      const dlg = parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue('--dlg-h')) || 0;
+      room = bottom - dlg - feedTop;
+    } catch (_) { room = 0; }
+    if (!room) return 2;                       // measurement failed: be careful
+    return Math.max(1, Math.min(4, Math.floor(room / CARD_ROOM)));
   }
 
   function freshStats() {
@@ -128,21 +156,26 @@ const PPGame = (() => {
     rounds = PPEvents.rounds();
     PPEvents.verify();
 
+    finished = false;
+    cancelFinal = null;
+
     if (resume && resume.round > 0) {
       roundIndex = Math.min(resume.round, rounds.length - 1);
       stability  = typeof resume.stability === 'number' ? resume.stability : 100;
       stats      = { ...freshStats(), ...(resume.stats || {}) };
-      ruleVisible = roundIndex >= 2;
     } else {
       roundIndex = 0;
       stability  = 100;
       stats      = freshStats();
-      ruleVisible = false;
-      socialExplained = false;
-      spoken.clear();
     }
+    socialExplained = false;
+    spoken.clear();
 
-    el.ruleCard.classList.toggle('hidden', !ruleVisible);
+    // Which rules are on the board is RUN state, so it is set here for
+    // every start — a replay used to inherit the previous run's rules
+    // and hand the player round 5's board in round 0, and a resumed run
+    // used to lose rules it had already been taught.
+    applyRuleState(roundIndex);
     running = true;
     paintStability(0);
     PPAudio.hum.start();
@@ -208,13 +241,31 @@ const PPGame = (() => {
     after(900, () => running && runRound(i + 1));
   }
 
+  /* Which rules a given round has already been taught. Resuming at
+     round 5 must show everything rounds 2 to 4 established, and
+     starting again must show none of it. */
+  const RULE_ROUND = { ERLEDIGT: 3, HALTEN: 4, WIDERRUFEN: 5, SOZIAL: 4 };
+
+  function applyRuleState(round) {
+    ruleVisible = round >= 2;
+    el.ruleCard.classList.toggle('hidden', !ruleVisible);
+    Object.keys(el.rules).forEach(key => {
+      const li = el.rules[key];
+      if (!li) return;
+      const on = round >= RULE_ROUND[key];
+      li.classList.toggle('hidden', !on);
+      li.classList.remove('fresh');
+    });
+    socialExplained = round >= RULE_ROUND.SOZIAL;
+  }
+
   /* The facility adds a rule. Always BEFORE the round that tests it,
      never during — a rule the player meets for the first time as a
      penalty is a gotcha, and this game does not do those. */
   const RULE_TEXT = {
-    ERLEDIGT:   'ERGÄNZUNG: EIN WARTUNGSCODE MIT DEM VERMERK ERLEDIGT IST BEREITS BEARBEITET. KEIN EINGRIFF.',
-    HALTEN:     'ERGÄNZUNG: EIN WARTUNGSCODE MIT DEM VERMERK HALTEN ERFORDERT DAUERHAFTEN KONTAKT. NICHT ANTIPPEN — HALTEN.',
-    WIDERRUFEN: 'ERGÄNZUNG: EIN WARTUNGSCODE KANN WIDERRUFEN WERDEN. NACH EINEM WIDERRUF IST KEIN EINGRIFF MEHR ERFORDERLICH.',
+    ERLEDIGT:   'ERGÄNZUNG: EIN CODE MIT DEM BUCHSTABEN E IST BEREITS BEARBEITET. KEIN EINGRIFF.',
+    HALTEN:     'ERGÄNZUNG: EIN CODE MIT DEM BUCHSTABEN H ERFORDERT DAUERHAFTEN KONTAKT. NICHT ANTIPPEN — HALTEN.',
+    WIDERRUFEN: 'ERGÄNZUNG: EIN CODE MIT DEM BUCHSTABEN W WIDERRUFT EINEN FRÜHEREN CODE. KEIN EINGRIFF.',
   };
   function revealRule(key) {
     const li = el.rules[key];
@@ -231,7 +282,7 @@ const PPGame = (() => {
     ruleVisible = true;
     el.ruleCard.classList.remove('hidden');
     PPAudio.klonk();                          // a rule is a physical placard
-    announce('Sicherheitsregel eingeblendet: Ein Wartungscode M gefolgt von zwei Ziffern bedeutet, Eingriff erforderlich. Alle anderen Meldungen sind nur informativ.');
+    announce('Sicherheitsregel eingeblendet: Ein Anlagencode N gefolgt von zwei Ziffern bedeutet, Eingriff erforderlich. Meldungen ohne Code sind nur informativ.');
   }
 
   /* ═══ MESSAGES ══════════════════════════════════════════════════ */
@@ -262,7 +313,7 @@ const PPGame = (() => {
     // A revocation is not a message you act on — it acts on one that is
     // already up. Find the live code it names and stand it down.
     if (ev.cat === 'REVOKE') {
-      const target = live.find(c => !c.resolved && c.ev.cat === 'INTERVENTION' && c.ev.code === ev.code);
+      const target = live.find(c => !c.resolved && c.ev.cat === 'INTERVENTION' && c.ev.code === ev.target);
       if (target) {
         target.revoked = true;
         target.node.classList.add('revoked');
@@ -270,7 +321,7 @@ const PPGame = (() => {
           target.action.textContent = '[ NICHT MEHR ERFORDERLICH ]';
           target.action.classList.remove('bait');
         }
-        announce(ev.code + ' widerrufen. Kein Eingriff mehr erforderlich.');
+        announce(ev.target + ' widerrufen. Kein Eingriff mehr erforderlich.');
       }
     }
 
@@ -289,6 +340,11 @@ const PPGame = (() => {
     live.push(card);
 
     announce(`${ev.chip ? ev.chip + ': ' : ''}${ev.head}`);
+
+    // Check the fit now rather than waiting for the next tick: the
+    // quarter-second between a spawn and the periodic trim was long
+    // enough for a freshly arrived card to sit below the fold.
+    trimToFit();
   }
 
   function render(ev) {
@@ -389,11 +445,18 @@ const PPGame = (() => {
       raf = requestAnimationFrame(tick);
     };
 
+    // Where the finger started, so a hold survives the small drift that
+    // every real thumb produces over 800ms.
+    let ox = 0, oy = 0;
+    const SLOP = 44;
+
     const begin = (e) => {
       if (card.resolved || active) return;
       if (e && e.preventDefault) e.preventDefault();
       active = true;
       from = now();
+      ox = e && e.clientX != null ? e.clientX : 0;
+      oy = e && e.clientY != null ? e.clientY : 0;
       btn.classList.add('holding');
       try { if (e && e.pointerId != null) btn.setPointerCapture(e.pointerId); } catch (_) {}
       tick();
@@ -416,7 +479,14 @@ const PPGame = (() => {
     btn.addEventListener('pointerdown', begin);
     btn.addEventListener('pointerup', end);
     btn.addEventListener('pointercancel', stop);
-    btn.addEventListener('pointerleave', stop);
+    // Distance, not boundaries. `pointerleave` used to cancel the hold,
+    // which on a phone meant a couple of millimetres of thumb drift lost
+    // the press — and with pointer capture it fired even though the
+    // events were still ours.
+    btn.addEventListener('pointermove', (e) => {
+      if (!active || e.clientX == null) return;
+      if (Math.hypot(e.clientX - ox, e.clientY - oy) > SLOP) stop();
+    });
     btn.addEventListener('keydown', e => {
       if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) begin(e);
     });
@@ -425,9 +495,70 @@ const PPGame = (() => {
     btn.addEventListener('click', e => e.preventDefault());
   }
 
+  /* ═══════════════════════════════════════════════════════════════
+     KEEPING THE PILE INSIDE THE SCREEN
+
+     The cap decides how many cards may arrive. It cannot decide what
+     happens afterwards: the rule card grows a line when a rule is
+     taught, the dialogue strip slides up over the bottom of the screen,
+     someone resizes the window. Each of those shrinks the room under a
+     pile that already fitted when it was built.
+
+     So the pile is also checked continuously, and trimmed the moment
+     its lowest button falls past what is reachable. Noise goes first,
+     oldest first; a genuine code is never culled, it is what the
+     culling is protecting. This is what turns "every button is
+     reachable without scrolling" from a measurement into an invariant.
+     ═══════════════════════════════════════════════════════════════ */
+  function roomLimit() {
+    try {
+      const screen = document.getElementById('deckScreen');
+      const bottom = screen ? screen.getBoundingClientRect().bottom : window.innerHeight;
+      const dlg = parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue('--dlg-h')) || 0;
+      return bottom - dlg;
+    } catch (_) { return window.innerHeight; }
+  }
+
+  function trimToFit() {
+    const limit = roomLimit();
+
+    const lowestLive = () => {
+      let low = 0;
+      live.forEach(c => {
+        if (c.resolved) return;
+        const r = (c.action || c.node).getBoundingClientRect();
+        if (r.height && r.bottom > low) low = r.bottom;
+      });
+      return low;
+    };
+
+    for (let guard = 0; guard < 6; guard++) {
+      const low = lowestLive();
+      if (!low || low <= limit + 1) return;
+
+      // A card that has been resolved is a receipt; a card that is still
+      // live is a decision. Receipts yield first — and they were the
+      // whole problem: they leave `live` the moment they resolve, so
+      // nothing was culling them, and on a short screen a single stale
+      // receipt was enough to push the one card that mattered off the
+      // bottom of the monitor.
+      const stale = el.feed.querySelector('.evt.resolved');
+      if (stale) { stale.remove(); continue; }
+
+      const open = live.filter(c => !c.resolved);
+      if (open.length < 2) return;                   // one live card always stays
+      const victim = open.find(c => c.ev.cat === 'INFO')
+                  || open.find(c => c.ev.cat !== 'INTERVENTION');
+      if (!victim) return;                           // only real codes left
+      resolveExpiry(victim, true);
+    }
+  }
+
   /* ─── the lifetime bars, one loop for all of them ─────────────── */
   function startLifeLoop() {
     if (rafId) return;
+    let lastTrim = 0;
     const step = () => {
       const t = now();
       live.slice().forEach(c => {
@@ -436,6 +567,9 @@ const PPGame = (() => {
         if (c.bar) c.bar.style.transform = `scaleX(${1 - p})`;
         if (p >= 1) resolveExpiry(c);
       });
+      // Reading layout every frame would be wasteful; four times a
+      // second is far faster than anything that changes the layout.
+      if (t - lastTrim > 250) { lastTrim = t; trimToFit(); }
       rafId = requestAnimationFrame(step);
     };
     rafId = requestAnimationFrame(step);
@@ -627,10 +761,25 @@ const PPGame = (() => {
     let attemptStart = 0;
     let localTimers = [];
     let raf = null;
-    let finished = false;
+    let over = false;
 
     const lt = (ms, fn) => { const t = setTimeout(fn, ms); localTimers.push(t); return t; };
     const clearLocal = () => { localTimers.forEach(clearTimeout); localTimers = []; };
+
+    // The finale runs on timers of its own, outside the module's list,
+    // because it has to survive `running = false`. That left nothing
+    // able to stop it — so switching the monitor off mid-calibration
+    // let it keep counting underneath and deliver a second results
+    // screen on top of the first. It hands out its own off-switch.
+    cancelFinal = () => {
+      over = true;
+      clearLocal();
+      if (raf) cancelAnimationFrame(raf);
+      raf = null;
+      stage.classList.add('hidden');
+      slot.innerHTML = '';
+      note.textContent = '';
+    };
 
     function paint(sec) {
       clock.textContent = `00:${String(Math.max(0, sec)).padStart(2, '0')}`;
@@ -663,7 +812,7 @@ const PPGame = (() => {
       });
 
       const loop = () => {
-        if (finished) return;
+        if (over) return;
         const elapsed = (now() - attemptStart) / 1000;
         const left = Math.max(0, FINAL_SECONDS - elapsed);
         const sec = Math.ceil(left);
@@ -681,7 +830,7 @@ const PPGame = (() => {
     }
 
     function onPress() {
-      if (finished) return;
+      if (over) return;
       stats.finalResets++;
       if (raf) cancelAnimationFrame(raf);
       PPDialogue.silence();
@@ -698,8 +847,8 @@ const PPGame = (() => {
     }
 
     function succeed() {
-      if (finished) return;
-      finished = true;
+      if (over) return;
+      over = true;
       clearLocal();
       if (raf) cancelAnimationFrame(raf);
       slot.innerHTML = '';
@@ -715,20 +864,31 @@ const PPGame = (() => {
           { speaker: 'SYSTEM', text: 'ERHOLUNG VERIFIZIERT.' },
         ], { auto: true });
       }, 3000);
-      setTimeout(() => {
+      lt(6200, () => {
         stage.classList.add('hidden');
-        PPResults.show({ stability, stats });
-      }, 6200);
+        cancelFinal = null;
+        report();
+      });
     }
 
     // A beat of genuine nothing before the clock even starts.
-    setTimeout(() => {
+    lt(900, () => {
       PPDialogue.say([
         { speaker: 'SYSTEM', text: 'ABSCHLUSSKALIBRIERUNG. AUFGABE: NICHTS TUN.' },
       ], { auto: true });
-    }, 900);
-    setTimeout(attempt, 4200);
+    });
+    lt(4200, attempt);
     paint(FINAL_SECONDS);
+  }
+
+  /* One run, one verdict. Everything that can end a run comes through
+     here, so nothing can produce a second results screen on top of the
+     first — which also stops a run being counted twice in the play
+     tally and its awards being granted twice. */
+  function report() {
+    if (finished) return;
+    finished = true;
+    PPResults.show({ stability, stats });
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -738,29 +898,33 @@ const PPGame = (() => {
      the switch is an ending, not a cheat that skips to a perfect one.
      ═══════════════════════════════════════════════════════════════ */
   function poweredOff() {
+    if (finished) return;                  // the run already has a verdict
     if (!stats) stats = freshStats();
     stats.poweredOff = true;
     running = false;
     clearTimers();
     stopLifeLoop();
     live = [];
+    if (cancelFinal) { cancelFinal(); cancelFinal = null; }   // mid-calibration is fine
     PPDialogue.silence();
     PPAudio.hum.stop();
     try { PPState.clearRun(); } catch (_) {}
     // The room is still there; only the screen has stopped.
-    setTimeout(() => PPResults.show({ stability, stats }), 1400);
+    setTimeout(report, 1400);
   }
 
   /* ═══ CONTROL ═══════════════════════════════════════════════════ */
   function abort() {
     running = false;
+    finished = false;
     clearTimers();
     stopLifeLoop();
+    if (cancelFinal) { cancelFinal(); cancelFinal = null; }
     live = [];
     PPDialogue.silence();
   }
 
-  return { init, start, abort, poweredOff, stateFor: () => ({ stability, stats: stats || freshStats(), roundIndex }) };
+  return { init, start, abort, poweredOff, stateFor: () => ({ stability, stats: stats || freshStats(), roundIndex, running, finished }) };
 })();
 
 if (typeof window !== 'undefined') window.PPGame = PPGame;

@@ -26,7 +26,22 @@
 }
 
 /* ═══ STATUS RAIL ═══════════════════════════════════════════════ */
-.rail { display: flex; flex-direction: column; gap: var(--sp-md); position: sticky; top: 62px; }
+/* The rail is sticky inside the screen. That means its own height has a
+   hard ceiling: anything past the bottom of the screen simply cannot be
+   scrolled to, because a sticky element does not move. With four rules
+   on the board the safety card was being cut in half — and a rule the
+   player was taught but cannot read is a fairness bug, not a cosmetic
+   one. So it is capped to the measured screen height and scrolls its
+   own overflow as a last resort. */
+.rail {
+  display: flex; flex-direction: column;
+  gap: var(--sp-sm);
+  position: sticky; top: 54px;
+  max-height: calc(var(--screen-h, 100vh) - 66px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
 
 /* ─── Pausenstabilität ───────────────────────────────────────── */
 .stab-value {
@@ -82,7 +97,7 @@
 /* ─── Round + timer ──────────────────────────────────────────── */
 .rail-rows { display: grid; grid-template-columns: 1fr auto; gap: 5px var(--sp-sm); }
 .rail-rows dt { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; color: var(--text-dim); text-transform: uppercase; }
-.rail-rows dd { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.12em; color: var(--text-primary); text-align: right; }
+.rail-rows dd { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; color: var(--text-primary); text-align: right; line-height: 1.35; }
 .rail-rows dd.mono-lg { font-size: 17px; }
 
 /* ─── The safety rule — permanently available once taught ────── */
@@ -115,7 +130,7 @@
    it; two-up once there is not. */
 .rule-list {
   list-style: none;
-  margin: var(--sp-sm) 0 0;
+  margin: 6px 0 0;
   padding: 0;
   display: grid;
   gap: 4px;
@@ -124,7 +139,7 @@
 .rule-extra {
   font-family: var(--font-mono);
   font-size: 11.5px;
-  line-height: 1.45;
+  line-height: 1.35;
   letter-spacing: 0.04em;
   color: var(--text-secondary);
 }
@@ -231,6 +246,22 @@
   line-height: 1.6;
   letter-spacing: 0.05em;
   color: var(--text-secondary);
+}
+
+/* ─── A CARD HAS A CEILING ───────────────────────────────────────
+   Everywhere, not only on a phone. Message text is drawn from pools,
+   so an unlucky pair of long ones could make the pile taller than the
+   screen — and the engine has to be able to predict a card's height in
+   order to decide how many of them fit. Two lines each is plenty; the
+   letter that decides what to do lives on the chip, which is never
+   clamped, so nothing load-bearing can be hidden this way. */
+.feed .evt .evt-head {
+  display: -webkit-box; -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden;
+}
+.feed .evt .evt-body {
+  display: -webkit-box; -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden;
 }
 
 /* The lifetime bar: how long this message stays. Present on every
@@ -341,8 +372,27 @@
 .evt-verdict.bad  { color: var(--text-error); }
 .evt-verdict.neut { color: var(--text-secondary); }
 
-.evt.resolved { opacity: .62; }
-.evt.resolved .evt-life { display: none; }
+/* ─── A RESOLVED MESSAGE COLLAPSES ───────────────────────────────
+   It has already done its job; the only part still worth reading is
+   the verdict. Collapsing it everywhere (not only on a phone) keeps
+   the pile short enough that a card the player can still act on is
+   never pushed down the screen by one they no longer can. */
+.evt.resolved {
+  opacity: .62;
+  padding-top: 7px; padding-bottom: 9px;
+  gap: 3px;
+}
+.evt.resolved .evt-life,
+.evt.resolved .evt-body,
+.evt.resolved .evt-action,
+.evt.resolved .evt-holdhint { display: none; }
+.evt.resolved .evt-head {
+  font-size: 13px;
+  display: -webkit-box; -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical; overflow: hidden;
+}
+.evt.resolved.tone-crit .evt-head { font-size: 13px; letter-spacing: 0.06em; }
+.evt.resolved .evt-verdict { padding-top: 5px; }
 
 /* ═══ FINAL CALIBRATION — the ten seconds ═══════════════════════ */
 .final-stage {
@@ -558,6 +608,14 @@
    A maintenance code that wants sustained contact. The fill grows
    inside the button; the button itself does not move, same rule as
    everywhere else in this game. */
+/* A hold has to own the gesture. With `manipulation` the browser is
+   still entitled to treat a moving finger as a scroll, which cancels
+   the press mid-way; and a long press on Android otherwise raises the
+   text-selection callout on top of the button being held. */
+.evt-action.needs-hold {
+  touch-action: none;
+  -webkit-touch-callout: none;
+}
 .evt-action.needs-hold::after {
   content: '';
   position: absolute;
@@ -594,7 +652,6 @@
 .evt.tone-revoke .evt-chip { color: var(--text-dim); }
 .evt.tone-revoke .evt-head { color: var(--text-secondary); font-size: 14px; }
 
-/* a maintenance code that was already dealt with by somebody else */
-.evt.tone-closed { border-left-color: var(--bdr-bright); }
-.evt.tone-closed .evt-chip { color: var(--text-secondary); }
-.evt.tone-closed .evt-head { color: var(--text-secondary); }
+/* No styling for an already-handled code on purpose: it draws its
+   presentation at random like every other message, so the E in its
+   code is the only thing that gives it away. */

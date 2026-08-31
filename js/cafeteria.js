@@ -79,6 +79,8 @@ const PPCafeteria = (() => {
      room introduces itself, and the thing you are about to climb
      into arrives on its own. */
   function startDrift() {
+    if (driftRaf) cancelAnimationFrame(driftRaf);   // never stack two loops
+    driftRaf = null;
     if (reduced()) {                       // no motion: settle on a good framing
       el.world.style.transform = `translateX(${-panRange * 0.52}px)`;
       return;

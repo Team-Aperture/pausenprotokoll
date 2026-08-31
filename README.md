@@ -94,7 +94,7 @@ würde der Oberfläche weiterhin 1440 px zusprechen, während sie tatsächlich
 |---|---|---|
 | **S** | BITTE NICHT STÖREN | nur über den Netzschalter erreichbar |
 | **A+** | PROFESSIONELLER NICHTSTUER | fehlerfreier Durchlauf |
-| **A** | VOLLSTÄNDIG ERHOLT | kein Wartungscode verpasst |
+| **A** | VOLLSTÄNDIG ERHOLT | kein Eingriff verpasst |
 | **B** | LEICHT ARBEITSSÜCHTIG | Freigabeschwelle |
 | **C** | PAUSE NICHT VERSTANDEN | keine Zieldaten |
 | **D** | R-3MI | keine Zieldaten |
@@ -104,7 +104,9 @@ von **B** gilt die Pause als nicht bestanden und die Anlage rückt die
 Koordinaten nicht heraus — eine Wiederholung ist jederzeit möglich.
 
 Auf dem Hauptmenü listet **[ ERFOLGE ]** alle Auszeichnungen, erreichte wie
-offene, über Durchläufe hinweg gespeichert.
+offene, über Durchläufe hinweg gespeichert. Eine davon nennt ihre Bedingung
+nicht — es ist ein geheimes Ende, und eine Erfolgsliste, die verrät, wie man
+es erreicht, ist eine Komplettlösung.
 
 ---
 
@@ -177,8 +179,8 @@ scheinbare Notfälle. Die meisten davon erfordern nichts. Einige wenige schon.
 **Die eine Regel, ab Runde 2 dauerhaft auf dem Bildschirm:**
 
 > Eine Meldung erfordert genau dann einen Eingriff, wenn sie einen
-> Wartungscode der Form **M-NN** trägt. Alle anderen Meldungen sind
-> während der Pause nur informativ.
+> Anlagencode trägt — und der **Buchstabe** des Codes sagt, welchen.
+> Meldungen ohne Code sind während der Pause nur informativ.
 
 Ob Farbe, Größe und Lautstärke etwas bedeuten, steht **nirgends im Spiel**.
 Das darf der Spieler selbst herausfinden — es ist ein Trollspiel, und die
@@ -190,6 +192,15 @@ und prüft, dass keine Nicht-Intervention irgendwo das Muster `M-<Ziffer>`
 enthält und dass jede Intervention einen wohlgeformten Code trägt. Ein neuer
 Witz, der die Regel bricht, meldet sich sofort in der Konsole.
 
+### Die Codefamilie
+
+| Code | Bedeutung | Was zu tun ist |
+|---|---|---|
+| `N-NN` | **N**ormal | drücken |
+| `H-NN` | **H**alten | gedrückt halten |
+| `E-NN` | **E**rledigt | nichts |
+| `W-NN` | **W**iderruf | nichts — hebt einen früheren Code auf |
+
 ### Die Regeln kommen nach und nach
 
 Runde 2 lehrt die Grundregel. Danach ergänzt die Anlage sie dreimal, jeweils
@@ -198,15 +209,17 @@ kennenlernt, wäre ein Gotcha, und die macht dieses Spiel nicht.
 
 | Runde | Neue Regel | Was sie bringt |
 |---|---|---|
-| 3 | **ERLEDIGT** | Ein Wartungscode, der bereits bearbeitet wurde. Trägt einen echten M-Code und braucht **nichts**. Lehre: die ganze Zeile lesen, nicht auf das Präfix mustern. |
-| 4 | **HALTEN** | Ein Wartungscode, der dauerhaften Kontakt verlangt. Antippen genügt nicht — und wird auch nicht bestraft, sondern erklärt. |
-| 5 | **WIDERRUFEN** | Die Anlage nimmt eine eigene Meldung zurück. Danach ist ein Eingriff unnötige Arbeit. |
+| 3 | **E-NN** | Ein Code, der bereits bearbeitet wurde. Trägt einen echten Code und braucht **nichts**. |
+| 4 | **H-NN** | Ein Code, der dauerhaften Kontakt verlangt. Antippen genügt nicht — und wird auch nicht bestraft, sondern erklärt. |
+| 5 | **W-NN** | Die Anlage nimmt eine eigene Meldung zurück. Danach ist ein Eingriff unnötige Arbeit. |
 
 Runde 6 ist der Parcours und benutzt alles davon gleichzeitig.
 
-Der Zusatz steht dabei auf dem **Chip** neben dem Code, nicht am Ende der
-Überschrift: Dort schaut der Spieler ohnehin hin, und eine gekürzte Überschrift
-kann so nie das verstecken, worauf es ankommt.
+Ein Buchstabe trägt die ganze Entscheidung. Bei ruhigem Bildschirm ist das
+trivial; bei einer Meldung alle 2,5 Sekunden ist es das ganze Spiel. Die
+Darstellung einer Meldung wird dabei **zufällig** gezogen — auch bei `E-NN`,
+denn ein erledigter Code, der immer grau aussähe, wäre erkennbar, ohne ihn zu
+lesen, und genau das Lesen ist der Punkt.
 
 ### Kategorien
 
@@ -214,9 +227,10 @@ kann so nie das verstecken, worauf es ankommt.
 |----------------|----------|--------------|-------------------|------------|
 | `INFO`         | MESSWERT | keine        | nichts tun        | — |
 | `DISTRACTION`  | frei     | ja           | ignorieren        | Drücken: −5 % |
-| `INTERVENTION` | `M-NN`   | ja           | drücken (ggf. halten) | Verstreichen lassen: −8 % |
-| `CLOSED`       | `M-NN ERLEDIGT` | ja    | ignorieren        | Drücken: −5 % |
-| `REVOKE`       | `M-NN`   | nein         | —                 | stellt einen laufenden Code still |
+| `INTERVENTION` | `N-NN`   | ja           | drücken           | Verstreichen lassen: −8 % |
+| `INTERVENTION` | `H-NN`   | ja           | **halten**        | Verstreichen lassen: −8 % |
+| `CLOSED`       | `E-NN`   | ja           | ignorieren        | Drücken: −5 % |
+| `REVOKE`       | `W-NN`   | nein         | —                 | stellt einen laufenden Code still |
 | `SPECIAL`      | SOZIAL   | ja           | freie Wahl        | folgenlos |
 
 `SOZIAL` gilt nicht als Arbeit — die Anlage stuft Zuwendung gegenüber R-3MI
@@ -228,8 +242,8 @@ und der Versuch läuft weiter. Jeder Durchlauf erreicht das Ende.
 
 ### Ablauf
 
-Kantine → Intro → Anflug → sieben Runden (Eingewöhnung, Grundrauschen, Wartungscodes,
-Kollegiale Störung, Darstellungstest, Zielkonflikt, Pausenstress) →
+Kantine → Intro → Anflug → sieben Runden (Eingewöhnung, Grundrauschen, Anlagencodes,
+Abgeschlossene Vorgänge, Dauerkontakt, Zielkonflikt, Pausenstress) →
 Abschlusskalibrierung → Auswertung → Abspann.
 
 Die Abschlusskalibrierung ist **zehn Sekunden nichts tun.** Nach drei Sekunden
@@ -300,6 +314,37 @@ halten die Animation deshalb an, statt gegen sie anzutreten.
 
 ---
 
+## Wie die Zusage gehalten wird
+
+**Jede Schaltfläche einer offenen Meldung ist ohne Scrollen erreichbar.** Das
+ist keine Messung mehr, die zufällig gehalten hat, sondern eine Eigenschaft
+des Spiels:
+
+* Wie viele Meldungen gleichzeitig erscheinen dürfen, wird **gemessen** statt
+  geraten. Früher hing das an der Fensterbreite — nur ein Näherungswert, denn
+  die eigentliche Grenze ist, wie viel Platz die Meldungsspalte tatsächlich
+  unter sich hat. Ein 1024×768-Fenster war breit genug für drei Karten und
+  hatte Platz für eine.
+* Der Deckel bestimmt nur das **Tempo**. Die Zusage hält `trimToFit()`: Der
+  Stapel wird viermal pro Sekunde und nach jeder neuen Meldung geprüft und
+  gekürzt, sobald seine unterste Schaltfläche unter den Rand rutscht — etwa
+  weil die Regelkarte um eine Zeile gewachsen ist, die Dialogleiste
+  hochgefahren ist oder jemand das Fenster verkleinert hat.
+* Gekürzt wird nach Wert: zuerst **erledigte Karten** (die sind Quittungen),
+  dann Rauschen, ältestes zuerst. Ein echter Code wird **nie** entfernt — er
+  ist das, was das Kürzen schützt. Und die Reihenfolge wird nie zugunsten
+  echter Codes umsortiert: Position darf nichts verraten.
+
+Gemessen über volle Sitzungen auf 360×640, 360×740, 414×896, 768×1024,
+1024×768, 1280×720, 1366×768, 1440×900, 1600×900 und 1920×1080: **keine
+einzige Schaltfläche unter dem Falz.**
+
+Auf kurzen Fenstern weicht dafür der Raum: Unter 820px Höhe schrumpfen
+Sitzabstand und Tischband, damit der Monitor genug Platz behält — Spiel vor
+Kulisse.
+
+---
+
 ## Bedienung, Barrierefreiheit
 
 * Tastatur: alles per Tab erreichbar, deutlich sichtbarer Fokusring, `Enter` /
@@ -313,13 +358,8 @@ halten die Animation deshalb an, statt gegen sie anzutreten.
 * Zustandsänderungen laufen über eine `aria-live`-Region
 * Ton ist optional und nie lösungsnotwendig
 
-Auf dem Telefon gilt zusätzlich eine gemessene Zusage: **jede Schaltfläche einer
-noch offenen Meldung ist ohne Scrollen erreichbar.** Dafür sind gleichzeitig
-höchstens zwei Meldungen offen, erledigte Karten klappen auf ihre Bewertung
-zusammen, und die Regelkarte zeigt ihre tragende Zeile. Über eine vollständige
-Sitzung auf 360×640 und 360×740 liegt die tiefste Schaltflächenkante bei 625 px
-bzw. 659 px — keine einzige unter dem Falz. Auf dem Telefon schrumpft der
-Kantinenrahmen dafür auf 4 px: Die Spielfläche geht vor.
+Auf dem Telefon schrumpft der Kantinenrahmen auf 4 px: Die Spielfläche geht
+vor. Wie die Erreichbarkeits-Zusage gehalten wird, steht oben.
 
 Die Reihenfolge der Meldungen wird dabei **nie** zugunsten echter Codes
 umsortiert. Position darf nichts verraten.
@@ -334,7 +374,7 @@ Prozedurales Web Audio, keine Dateien. Ein globaler Schalter, der gemerkt wird.
 gesicherte Tasse, ein stabilisierter Stuhl, eine eingeblendete Regeltafel. Eine
 Schaltfläche, die nur den Bildschirm ändert, bekommt ein gewöhnliches Klicken.
 
-Echte Wartungscodes klingen anders als Fehlmeldungen (ein steigender Zweiklang
+Echte Eingriffe klingen anders als Fehlmeldungen (ein steigender Zweiklang
 gegen einen flachen Piepser). Das ist eine Zugabe, keine Voraussetzung — der
 Code steht auf der Karte.
 
