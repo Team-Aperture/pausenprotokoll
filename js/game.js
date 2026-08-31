@@ -64,6 +64,7 @@ const PPGame = (() => {
       social: 0,            // times the player was decent to R-3MI
       fakesOffered: 0,      // how many unnecessary buttons were ever offered
       finalResets: 0,
+      poweredOff: false,   // the monitor was switched off mid-break
     };
   }
 
@@ -125,7 +126,19 @@ const PPGame = (() => {
 
     PPState.saveRun({ round: i, stability, stats });
 
-    el.roundNm.textContent = `RUNDE ${String(i).padStart(2, '0')} // ${r.name}`;
+    // Number and name are separate so a narrow screen can drop the name:
+    // "RUNDE 04" is what the player needs, "DARSTELLUNGSTEST" is flavour,
+    // and wrapped over three lines the flavour was pushing the messages
+    // themselves off the bottom of a small phone.
+    el.roundNm.innerHTML = '';
+    const num = document.createElement('span');
+    num.className = 'rn-num';
+    num.textContent = `RUNDE ${String(i).padStart(2, '0')}`;
+    const nm = document.createElement('span');
+    nm.className = 'rn-name';
+    nm.textContent = ` // ${r.name}`;
+    el.roundNm.appendChild(num);
+    el.roundNm.appendChild(nm);
     el.banner.textContent  = r.banner || '';
 
     const started = now();
@@ -546,6 +559,26 @@ const PPGame = (() => {
     paint(FINAL_SECONDS);
   }
 
+  /* ═══════════════════════════════════════════════════════════════
+     THE MONITOR WENT OFF
+     Callable at any point in a run. Everything stops where it stands
+     and the result is scored on what actually happened up to here —
+     the switch is an ending, not a cheat that skips to a perfect one.
+     ═══════════════════════════════════════════════════════════════ */
+  function poweredOff() {
+    if (!stats) stats = freshStats();
+    stats.poweredOff = true;
+    running = false;
+    clearTimers();
+    stopLifeLoop();
+    live = [];
+    PPDialogue.silence();
+    PPAudio.hum.stop();
+    try { PPState.clearRun(); } catch (_) {}
+    // The room is still there; only the screen has stopped.
+    setTimeout(() => PPResults.show({ stability, stats }), 1400);
+  }
+
   /* ═══ CONTROL ═══════════════════════════════════════════════════ */
   function abort() {
     running = false;
@@ -555,7 +588,7 @@ const PPGame = (() => {
     PPDialogue.silence();
   }
 
-  return { init, start, abort, stateFor: () => ({ stability, stats, roundIndex }) };
+  return { init, start, abort, poweredOff, stateFor: () => ({ stability, stats: stats || freshStats(), roundIndex }) };
 })();
 
 if (typeof window !== 'undefined') window.PPGame = PPGame;

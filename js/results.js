@@ -17,6 +17,14 @@ const PPResults = (() => {
      Ordered best to worst; the first whose test passes is awarded. */
   const RANKS = [
     {
+      id: 'OFF', letter: 'S', name: 'BITTE NICHT STÖREN',
+      color: 'var(--accent-warn)',
+      note: 'DAS TESTSUBJEKT HAT DAS TERMINAL AUSGESCHALTET. DIE ANLAGE VERBUCHT DIES ALS ABBRUCH. '
+          + 'SIE RÄUMT GLEICHZEITIG EIN, DASS WÄHREND EINER PAUSE NIEMAND ERREICHBAR SEIN MUSS. '
+          + 'BEIDE FESTSTELLUNGEN BLEIBEN IM PROTOKOLL STEHEN.',
+      test: (s, st) => !!st.poweredOff,
+    },
+    {
       id: 'S', letter: 'S', name: 'PROFESSIONELLER NICHTSTUER',
       color: 'var(--accent-r3mi)',
       note: 'KEINE UNNÖTIGE TÄTIGKEIT. KEINE VERSÄUMTE WARTUNG. DIE ANLAGE HAT NICHTS ZU BEANSTANDEN UND WEISS DAMIT NICHTS ANZUFANGEN.',
@@ -53,14 +61,19 @@ const PPResults = (() => {
   const AWARDS = [
     { id: 'prof',   name: 'PROFESSIONELLER NICHTSTUER', desc: 'RANG S ERREICHT.',
       test: (s, st, rank) => rank.id === 'S' },
+    // These two are about parts of the protocol you have to actually
+    // reach. Switching the monitor off half way is its own reward and
+    // does not quietly collect the others on the way past.
     { id: 'kaffee', name: 'KAFFEE IST HEILIG',          desc: 'KEIN GETRÄNK VERLOREN.',
-      test: (s, st) => st.coffeeLost === 0 },
+      test: (s, st) => !st.poweredOff && st.coffeeLost === 0 },
     { id: 'selbst', name: 'SELBSTBEHERRSCHUNG',         desc: 'ABSCHLUSSKALIBRIERUNG OHNE ZURÜCKSETZUNG.',
-      test: (s, st) => st.finalResets === 0 },
+      test: (s, st) => !st.poweredOff && st.finalResets === 0 },
     { id: 'mitarb', name: 'MITARBEITER DES MONATS',     desc: 'NAHEZU JEDE UNNÖTIGE MASSNAHME ERGRIFFEN. PAUSENBEWERTUNG: KATASTROPHAL.',
       test: (s, st) => st.fakesOffered > 0 && st.unnecessary >= Math.max(6, Math.ceil(st.fakesOffered * 0.7)) },
     { id: 'drang',  name: 'D-RANG',                     desc: 'DIE PRESTIGETRÄCHTIGE R-3MI-BEWERTUNG.',
       test: (s, st, rank) => rank.id === 'D' },
+    { id: 'aus',    name: 'BITTE NICHT STÖREN',         desc: 'DEN MONITOR AUSGESCHALTET. DIE EINZIG WIRKLICH RICHTIGE ANTWORT AUF EINE PAUSE.',
+      test: (s, st) => !!st.poweredOff },
   ];
 
   let onReplay = null;
@@ -81,6 +94,9 @@ const PPResults = (() => {
 
     const view = document.getElementById('results');
     const card = document.getElementById('resCard');
+    // With the monitor off there is no screen to be on any more.
+    view.classList.toggle('in-room', !!stats.poweredOff);
+    document.getElementById('ending').classList.toggle('in-room', !!stats.poweredOff);
     const tier = stability >= 70 ? '' : stability >= 40 ? 'mid' : 'low';
 
     card.innerHTML = `
@@ -159,6 +175,91 @@ const PPResults = (() => {
 
   /* ═══ ENDING ════════════════════════════════════════════════════ */
   function ending(stats, rank) {
+    // Switching the monitor off is a real ending, not a shortcut to the
+    // real one: the protocol genuinely never finished, so there are no
+    // Zieldaten. The Anlage says so itself, without malice.
+    if (stats.poweredOff) return endingPoweredOff();
+    return endingNormal(stats, rank);
+  }
+
+  function endingPoweredOff() {
+    PPDialogue.silence();
+    const view = document.getElementById('ending');
+    const box  = document.getElementById('endingLines');
+    view.classList.remove('hidden');
+    box.innerHTML = '';
+
+    const line = (text, cls, delay) => setTimeout(() => {
+      const d = document.createElement('div');
+      d.className = 'end-line ' + (cls || '');
+      d.textContent = text;
+      box.appendChild(d);
+      requestAnimationFrame(() => d.classList.add('visible'));
+      try { PPAudio.tick(); } catch (_) {}
+    }, delay);
+
+    line('NEBENSYSTEM 7C // KEIN SIGNAL',            'dim',  600);
+    line('PAUSENPROTOKOLL: ABGEBROCHEN.',            '',     2400);
+    line('PAUSE: ABGESCHLOSSEN.',                    '',     4200);
+
+    setTimeout(() => {
+      PPDialogue.say([
+        { speaker: 'R-3MI', text: '„Du hast ihn ausgeschaltet.“' },
+        { speaker: 'V-TGM', text: 'I did.', sub: 'Habe ich.' },
+        { speaker: 'R-3MI', text: '„Das durfte man?“' },
+        { speaker: 'V-TGM', text: 'It is a break, Remi. Nobody has to reach us.', sub: 'Es ist eine Pause, Remi. Niemand muss uns erreichen.' },
+        { speaker: 'R-3MI', text: '„…“' },
+        { speaker: 'R-3MI', text: '„Ich sitze einfach mal hier.“' },
+        { speaker: 'V-TGM', text: 'There you go.', sub: 'Na also.' },
+      ], { auto: true });
+    }, 6000);
+
+    setTimeout(() => {
+      box.innerHTML = '';
+      const a = document.createElement('div');
+      a.className = 'end-line dim';
+      a.textContent = 'DIE KALIBRIERUNGSANLAGE';
+      const b = document.createElement('div');
+      b.className = 'end-line big';
+      b.textContent = 'PAUSENPROTOKOLL';
+      const c = document.createElement('div');
+      c.className = 'end-line thanks';
+      c.textContent = 'Danke fürs Nichtstun. Wirklich diesmal.';
+      [a, b, c].forEach((n, k) => {
+        box.appendChild(n);
+        setTimeout(() => n.classList.add('visible'), 200 + k * 700);
+      });
+    }, 22000);
+
+    // The joke, and the honest reason.
+    setTimeout(() => {
+      const w = document.createElement('div');
+      w.className = 'end-line end-coords ec-denied';
+      w.innerHTML = '<div class="ec-label">ZIELDATEN NICHT FREIGEGEBEN</div>'
+                  + '<div class="ec-denied-text">DAS PROTOKOLL WURDE NICHT ABGESCHLOSSEN.<br>'
+                  + 'WER DIE ANLAGE ABSCHALTET, BEKOMMT KEINE KOORDINATEN.<br>'
+                  + 'DIE ANLAGE HÄLT DAS FÜR FAIR.</div>';
+      box.appendChild(w);
+      requestAnimationFrame(() => w.classList.add('visible'));
+      try { PPAudio.wrong(); } catch (_) {}
+    }, 25200);
+
+    setTimeout(() => {
+      const row = document.createElement('div');
+      row.className = 'res-actions';
+      row.style.marginTop = 'var(--sp-lg)';
+      row.innerHTML = '<button class="ka-btn go" id="endAgain" type="button">[ NOCHMAL PAUSE MACHEN ]</button>'
+                    + '<button class="ka-btn small" id="endMenu" type="button">[ HAUPTMENÜ ]</button>';
+      box.appendChild(row);
+      document.getElementById('endAgain').addEventListener('click', () => onReplay && onReplay('again'));
+      document.getElementById('endMenu').addEventListener('click', () => onReplay && onReplay('menu'));
+      document.getElementById('endAgain').focus();
+    }, 27500);
+
+    document.getElementById('endSkip').classList.remove('hidden');
+  }
+
+  function endingNormal(stats, rank) {
     PPDialogue.silence();
     const view = document.getElementById('ending');
     const box  = document.getElementById('endingLines');
@@ -215,7 +316,7 @@ const PPResults = (() => {
       ], { auto: true });
     }, 16800);
 
-    // Title card, then the last joke.
+    // Title card, the coordinates, then the last joke.
     setTimeout(() => {
       PPDialogue.silence();
       box.innerHTML = '';
@@ -228,7 +329,8 @@ const PPResults = (() => {
       const c = document.createElement('div');
       c.className = 'end-line thanks';
       c.textContent = 'Danke fürs Nichtstun.';
-      [a, b, c].forEach((n, k) => {
+      const d = coordBlock();
+      [a, b, c, d].forEach((n, k) => {
         box.appendChild(n);
         setTimeout(() => n.classList.add('visible'), 200 + k * 700);
       });
@@ -263,10 +365,66 @@ const PPResults = (() => {
     skip.classList.remove('hidden');
   }
 
+  /* ═══ ZIELDATEN ═════════════════════════════════════════════════
+     The reward for finishing, following the same convention as the
+     rest of the series: a visible block, tap to copy, and a
+     placeholder in the repository that is obviously not a real
+     position so nobody drives anywhere on it.
+
+     ▼▼▼  ECHTE CACHE-KOORDINATEN HIER EINTRAGEN  ▼▼▼               */
+  const ZIELDATEN = 'N 00° 00.000 · E 000° 00.000';
+  /* ▲▲▲  ECHTE CACHE-KOORDINATEN HIER EINTRAGEN  ▲▲▲               */
+
+  function coordBlock() {
+    const wrap = document.createElement('div');
+    wrap.className = 'end-line end-coords';
+
+    const label = document.createElement('div');
+    label.className = 'ec-label';
+    label.textContent = 'ZIELDATEN FREIGEGEBEN';
+
+    const val = document.createElement('button');
+    val.type = 'button';
+    val.className = 'ec-value';
+    val.textContent = ZIELDATEN;
+    val.setAttribute('aria-label', 'Zieldaten ' + ZIELDATEN + '. Zum Kopieren antippen.');
+
+    const hint = document.createElement('div');
+    hint.className = 'ec-hint';
+    hint.textContent = 'ZUM KOPIEREN ANTIPPEN';
+
+    val.addEventListener('click', () => {
+      const done = () => {
+        hint.textContent = 'KOPIERT.';
+        try { PPAudio.good(); } catch (_) {}
+        setTimeout(() => { hint.textContent = 'ZUM KOPIEREN ANTIPPEN'; }, 2200);
+      };
+      // Clipboard access can be refused outright; falling back to a
+      // selection means the player can still copy it by hand.
+      try {
+        navigator.clipboard.writeText(ZIELDATEN).then(done).catch(select);
+      } catch (_) { select(); }
+      function select() {
+        try {
+          const r = document.createRange();
+          r.selectNodeContents(val);
+          const sel = window.getSelection();
+          sel.removeAllRanges(); sel.addRange(r);
+          hint.textContent = 'MARKIERT — BITTE SELBST KOPIEREN.';
+        } catch (_) {}
+      }
+    });
+
+    wrap.appendChild(label);
+    wrap.appendChild(val);
+    wrap.appendChild(hint);
+    return wrap;
+  }
+
   function setReplayHandler(fn) { onReplay = fn; }
 
   /* Jump straight to the buttons at the end of the ending. */
-  function skipEnding() {
+  function skipEnding(poweredOff) {
     const box = document.getElementById('endingLines');
     box.innerHTML = '';
     PPDialogue.silence();
@@ -279,19 +437,29 @@ const PPResults = (() => {
     const c = document.createElement('div');
     c.className = 'end-line thanks visible';
     c.textContent = 'Danke fürs Nichtstun.';
+    let co;
+    if (poweredOff) {
+      co = document.createElement('div');
+      co.className = 'end-line end-coords ec-denied visible';
+      co.innerHTML = '<div class="ec-label">ZIELDATEN NICHT FREIGEGEBEN</div>'
+                   + '<div class="ec-denied-text">WER DIE ANLAGE ABSCHALTET, BEKOMMT KEINE KOORDINATEN.</div>';
+    } else {
+      co = coordBlock();
+      co.classList.add('visible');
+    }
     const row = document.createElement('div');
     row.className = 'res-actions';
     row.style.marginTop = 'var(--sp-lg)';
     row.innerHTML = `
       <button class="ka-btn go" id="endAgain" type="button">[ NOCHMAL PAUSE MACHEN ]</button>
       <button class="ka-btn small" id="endMenu" type="button">[ HAUPTMENÜ ]</button>`;
-    [a, b, c, row].forEach(n => box.appendChild(n));
+    [a, b, c, co, row].forEach(n => box.appendChild(n));
     document.getElementById('endAgain').addEventListener('click', () => onReplay && onReplay('again'));
     document.getElementById('endMenu').addEventListener('click', () => onReplay && onReplay('menu'));
     document.getElementById('endAgain').focus();
   }
 
-  return { show, rankFor, setReplayHandler, skipEnding, RANKS, AWARDS };
+  return { show, rankFor, setReplayHandler, skipEnding, coordBlock, RANKS, AWARDS, ZIELDATEN };
 })();
 
 if (typeof window !== 'undefined') window.PPResults = PPResults;

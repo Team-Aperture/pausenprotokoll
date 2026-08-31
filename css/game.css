@@ -467,3 +467,49 @@
 }
 .end-line.thanks { font-family: var(--font-body); text-transform: none; letter-spacing: 0.04em; font-size: 16px; color: var(--text-secondary); font-style: italic; }
 .end-clock { font-family: var(--font-mono); font-size: clamp(28px, 8vw, 48px); letter-spacing: 0.08em; color: var(--accent-warn); }
+
+/* ─── ZIELDATEN ──────────────────────────────────────────────────
+   The reward, at the end of the ending. Same convention as the rest
+   of the series: readable, copyable, and a placeholder in the repo
+   that is obviously not a real position. */
+.end-coords {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  margin-top: var(--sp-md);
+  padding: var(--sp-md) var(--sp-lg);
+  border: 1px solid var(--accent-warn);
+  background: rgba(200,138,40,0.06);
+}
+.ec-label {
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.26em; color: var(--accent-warn); text-transform: uppercase;
+}
+.ec-value {
+  position: relative; isolation: isolate;
+  background: none; border: 0; padding: 6px 10px;
+  font-family: var(--font-mono);
+  font-size: clamp(15px, 3.4vw, 22px);
+  letter-spacing: 0.08em; color: var(--text-primary);
+  cursor: pointer; touch-action: manipulation;
+  text-shadow: 0 0 18px rgba(255,190,110,0.3);
+}
+.ec-value::before {
+  content: ''; position: absolute; inset: 0; z-index: -1;
+  border: 1px solid transparent;
+  transition: border-color var(--t-fast), background var(--t-fast), box-shadow var(--t-fast);
+}
+.ec-value:hover::before { border-color: var(--accent-warn); background: rgba(200,138,40,0.10); }
+.ec-value:focus-visible { outline: none; }
+.ec-value:focus-visible::before { border-color: var(--accent-warn); box-shadow: 0 0 0 2px var(--accent-warn); }
+.ec-hint {
+  font-family: var(--font-mono); font-size: 9px;
+  letter-spacing: 0.18em; color: var(--text-dim); text-transform: uppercase;
+  min-height: 1.2em;
+}
+
+/* the other ending: switched off, and told why that costs the coordinates */
+.end-coords.ec-denied { border-color: var(--text-error); background: rgba(200,68,68,0.06); }
+.ec-denied .ec-label { color: var(--text-error); }
+.ec-denied-text {
+  font-family: var(--font-mono); font-size: 11px; line-height: 1.8;
+  letter-spacing: 0.12em; color: var(--text-secondary); text-transform: uppercase;
+}

@@ -311,64 +311,83 @@
         <div class="final-hint">Es ist keine Eingabe vorgesehen.</div>
       </div>
 
-      <!-- ════════════════════════════════════════════════════════════
-           RESULTS
-           ════════════════════════════════════════════════════════════ -->
-      <div class="results hidden" id="results">
-        <div class="res-card" id="resCard"></div>
-      </div>
-
-      <!-- ════════════════════════════════════════════════════════════
-           ENDING
-           ════════════════════════════════════════════════════════════ -->
-      <div class="ending hidden" id="ending">
-        <div id="endingLines" style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-md)"></div>
-      </div>
-      <button class="ka-btn small boot-skip hidden" id="endSkip" type="button" style="opacity:1;pointer-events:auto">[ ÜBERSPRINGEN ]</button>
-
-
-      <!-- ════════════════════════════════════════════════════════════
-           BRIEFING
-           ════════════════════════════════════════════════════════════ -->
-      <div class="overlay-backdrop hidden" id="overlayBackdrop"></div>
-      <div class="overlay-panel hidden" id="briefing" role="dialog" aria-modal="true" aria-labelledby="briefTitle">
-        <div class="overlay-card">
-          <h2 class="overlay-title" id="briefTitle">VERSUCHSHINWEISE</h2>
-          <p class="sys-text">Nebensystem // Pausenprotokoll</p>
-
-          <div class="overlay-content">
-            <p>Die Anlage hat Unterlagen über <b>Pausen</b> gefunden und daraus eine
-               Versuchsreihe abgeleitet. Sie sendet währenddessen Meldungen. Die
-               meisten davon erfordern nichts.</p>
-
-            <p><b>Die Regel:</b> Eine Meldung mit einem Wartungscode — <b>M</b> gefolgt
-               von zwei Ziffern, etwa <b>M-03</b> — erfordert einen Eingriff. Jede andere
-               Meldung ist während der Pause nur informativ.</p>
-
-            <p>Farbe, Größe und Lautstärke einer Meldung sagen <b>nichts</b> darüber aus,
-               ob sie wichtig ist. Das ist Teil des Versuchs.</p>
-
-            <p>Ein unnötiger Eingriff kostet Pausenstabilität. Ein versäumter
-               Wartungscode ebenfalls. Ein Fehler beendet nichts — die Pause läuft
-               weiter, und die Anlage kommentiert.</p>
-
-            <p class="sys-text" style="margin-top:var(--sp-md);color:var(--text-dim)">
-              Ton ist optional. Alles Spielrelevante steht auf dem Bildschirm.
-            </p>
-          </div>
-
-          <button class="ka-btn" id="briefClose" type="button">[ SCHLIESSEN ]</button>
-        </div>
-      </div>
-
       </div><!-- /.deck-screen -->
 
-      <div class="deck-plate" aria-hidden="true">
-        <span>KA // NEBENSYSTEM 7C</span>
-        <span class="dp-led"></span>
+      <div class="deck-plate">
+        <span aria-hidden="true">KA // NEBENSYSTEM 7C</span>
+        <!-- A real power switch. Press and hold, like the ones on
+             actual monitors — a single click would end a run by
+             accident, and holding makes it a decision. -->
+        <button class="dp-power" id="deckPower" type="button"
+                aria-label="Monitor ausschalten. Zum Ausschalten gedrückt halten.">
+          <span class="dp-ring" aria-hidden="true"></span>
+          <span class="dp-led" aria-hidden="true"></span>
+        </button>
       </div>
     </div><!-- /.deck-bezel -->
   </div><!-- /.deck -->
+
+  <!-- ════════════════════════════════════════════════════════════
+       RESULTS + ENDING — top level, clipped to the monitor.
+
+       These used to sit inside .deck-screen. That broke the moment the
+       screen could be switched off: the verdict was being rendered
+       inside a monitor that was no longer on, so nothing appeared.
+
+       They live out here now and are clipped to the monitor's measured
+       rectangle (--screen-inset), so they still read as being ON the
+       screen. Switch the monitor off and .in-room drops the clip: the
+       assessment then happens in the cafeteria, which is the only place
+       left with the lights on.
+       ════════════════════════════════════════════════════════════ -->
+  <div class="results hidden" id="results">
+    <div class="res-card" id="resCard"></div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       ENDING
+       ════════════════════════════════════════════════════════════ -->
+  <div class="ending hidden" id="ending">
+    <div id="endingLines" style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-md)"></div>
+  </div>
+  <button class="ka-btn small boot-skip hidden" id="endSkip" type="button" style="opacity:1;pointer-events:auto">[ ÜBERSPRINGEN ]</button>
+
+  <!-- ════════════════════════════════════════════════════════════
+       BRIEFING — outside the monitor, like the dialogue.
+       It used to live inside .deck-screen, which is visibility:hidden
+       until the camera arrives — so [ VERSUCHSHINWEISE ] on the main
+       menu opened a panel nobody could see.
+       ════════════════════════════════════════════════════════════ -->
+  <div class="overlay-backdrop hidden" id="overlayBackdrop"></div>
+  <div class="overlay-panel hidden" id="briefing" role="dialog" aria-modal="true" aria-labelledby="briefTitle">
+    <div class="overlay-card">
+      <h2 class="overlay-title" id="briefTitle">VERSUCHSHINWEISE</h2>
+      <p class="sys-text">Nebensystem // Pausenprotokoll</p>
+
+      <div class="overlay-content">
+        <p>Die Anlage hat Unterlagen über <b>Pausen</b> gefunden und daraus eine
+           Versuchsreihe abgeleitet. Sie sendet währenddessen Meldungen. Die
+           meisten davon erfordern nichts.</p>
+
+        <p><b>Die Regel:</b> Eine Meldung mit einem Wartungscode — <b>M</b> gefolgt
+           von zwei Ziffern, etwa <b>M-03</b> — erfordert einen Eingriff. Jede andere
+           Meldung ist während der Pause nur informativ.</p>
+
+        <p>Farbe, Größe und Lautstärke einer Meldung sagen <b>nichts</b> darüber aus,
+           ob sie wichtig ist. Das ist Teil des Versuchs.</p>
+
+        <p>Ein unnötiger Eingriff kostet Pausenstabilität. Ein versäumter
+           Wartungscode ebenfalls. Ein Fehler beendet nichts — die Pause läuft
+           weiter, und die Anlage kommentiert.</p>
+
+        <p class="sys-text" style="margin-top:var(--sp-md);color:var(--text-dim)">
+          Ton ist optional. Alles Spielrelevante steht auf dem Bildschirm.
+        </p>
+      </div>
+
+      <button class="ka-btn" id="briefClose" type="button">[ SCHLIESSEN ]</button>
+    </div>
+  </div>
 
   <!-- ════════════════════════════════════════════════════════════
        DIALOGUE — in the room, not in the monitor.
@@ -402,6 +421,7 @@
   <script src="js/results.js"></script>
   <script src="js/game.js"></script>
   <script src="js/cafeteria.js"></script>
+  <script src="js/power.js"></script>
   <script src="js/app.js"></script>
 
 </body>
