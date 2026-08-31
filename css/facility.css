@@ -337,3 +337,26 @@
 .overlay-content { margin: var(--sp-md) 0 var(--sp-lg); }
 .overlay-content p { font-size: 14px; line-height: 1.65; color: var(--text-secondary); margin-bottom: var(--sp-sm); }
 .overlay-content b { color: var(--text-primary); font-weight: 400; }
+
+/* ─── ERFOLGE ────────────────────────────────────────────────────
+   State is carried by the mark and the wording, not by colour alone. */
+.award-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.award-item {
+  display: flex; gap: var(--sp-md); align-items: baseline;
+  padding: var(--sp-sm) 0;
+  border-bottom: 1px solid var(--bdr-dim);
+}
+.award-item:last-child { border-bottom: none; }
+.aw-mark {
+  font-family: var(--font-mono); font-size: 14px; width: 1em;
+  flex-shrink: 0; color: var(--text-dim); text-align: center;
+}
+.award-item.got .aw-mark { color: var(--accent-r3mi); }
+.aw-body { display: flex; flex-direction: column; gap: 2px; }
+.aw-name {
+  font-family: var(--font-display); font-size: 15px; font-weight: 600;
+  letter-spacing: 0.08em; color: var(--text-dim);
+}
+.award-item.got .aw-name { color: var(--accent-warn); }
+.aw-desc { font-family: var(--font-mono); font-size: 11px; line-height: 1.5; color: var(--text-secondary); }
+.award-item:not(.got) .aw-desc { color: var(--text-dim); }

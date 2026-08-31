@@ -81,7 +81,39 @@ const PPGame = (() => {
     el.stabDelta= document.getElementById('stabDelta');
     el.ruleCard = document.getElementById('ruleCard');
     el.ruleSoc  = document.getElementById('ruleSocial');
+    el.rules    = {
+      ERLEDIGT:   document.getElementById('ruleErledigt'),
+      HALTEN:     document.getElementById('ruleHalten'),
+      WIDERRUFEN: document.getElementById('ruleWiderruf'),
+      SOZIAL:     document.getElementById('ruleSocial'),
+    };
     el.live     = document.getElementById('liveRegion');
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     SAYING A THING ONCE
+     A reaction can be a plain list of lines, or a list OF lists — a
+     pool of alternatives. Several messages now appear more than once
+     in a run, and hearing R-3MI deliver the identical protest about
+     the identical fridge twice is worse than hearing nothing.
+     Variants are handed out unused-first, so a repeat is always a
+     different line until the pool runs dry.
+     ═══════════════════════════════════════════════════════════════ */
+  const spoken = new Map();     // pool identity -> Set of used indices
+
+  function say(spec, key) {
+    if (!spec || !spec.length) return;
+    let lines = spec;
+    if (Array.isArray(spec[0])) {
+      const id = key || spec;
+      let used = spoken.get(id);
+      if (!used || used.size >= spec.length) { used = new Set(); spoken.set(id, used); }
+      const free = spec.map((_, i) => i).filter(i => !used.has(i));
+      const pick = free[Math.floor(Math.random() * free.length)];
+      used.add(pick);
+      lines = spec[pick];
+    }
+    PPDialogue.say(lines, { auto: true });
   }
 
   function announce(msg) {
@@ -107,6 +139,7 @@ const PPGame = (() => {
       stats      = freshStats();
       ruleVisible = false;
       socialExplained = false;
+      spoken.clear();
     }
 
     el.ruleCard.classList.toggle('hidden', !ruleVisible);
@@ -157,6 +190,7 @@ const PPGame = (() => {
         if (step.ev)  spawn(step.ev);
         if (step.say) PPDialogue.say(step.say, { auto: true });
         if (step.do === 'ruleCard') showRuleCard();
+        if (step.rule) revealRule(step.rule);
       });
     });
 
@@ -174,6 +208,24 @@ const PPGame = (() => {
     after(900, () => running && runRound(i + 1));
   }
 
+  /* The facility adds a rule. Always BEFORE the round that tests it,
+     never during — a rule the player meets for the first time as a
+     penalty is a gotcha, and this game does not do those. */
+  const RULE_TEXT = {
+    ERLEDIGT:   'ERGÄNZUNG: EIN WARTUNGSCODE MIT DEM VERMERK ERLEDIGT IST BEREITS BEARBEITET. KEIN EINGRIFF.',
+    HALTEN:     'ERGÄNZUNG: EIN WARTUNGSCODE MIT DEM VERMERK HALTEN ERFORDERT DAUERHAFTEN KONTAKT. NICHT ANTIPPEN — HALTEN.',
+    WIDERRUFEN: 'ERGÄNZUNG: EIN WARTUNGSCODE KANN WIDERRUFEN WERDEN. NACH EINEM WIDERRUF IST KEIN EINGRIFF MEHR ERFORDERLICH.',
+  };
+  function revealRule(key) {
+    const li = el.rules[key];
+    if (!li || !li.classList.contains('hidden')) return;
+    showRuleCard();
+    li.classList.remove('hidden');
+    li.classList.add('fresh');
+    PPAudio.klonk();
+    announce('Neue Sicherheitsregel: ' + (RULE_TEXT[key] || key));
+  }
+
   function showRuleCard() {
     if (ruleVisible) return;
     ruleVisible = true;
@@ -189,8 +241,7 @@ const PPGame = (() => {
     if (ev.cat === 'DISTRACTION') stats.fakesOffered++;
     if (ev.cat === 'SPECIAL' && !socialExplained) {
       socialExplained = true;
-      el.ruleSoc.classList.remove('hidden');
-      announce('Hinweis: Meldungen der Kategorie SOZIAL gelten nicht als Arbeit und sind folgenlos.');
+      revealRule('SOZIAL');
     }
 
     // Keep the screen usable. Every card counts against the cap —
@@ -206,6 +257,21 @@ const PPGame = (() => {
                   || open.find(c => c.ev.cat !== 'INTERVENTION');
       if (!victim) break;
       resolveExpiry(victim, true);
+    }
+
+    // A revocation is not a message you act on — it acts on one that is
+    // already up. Find the live code it names and stand it down.
+    if (ev.cat === 'REVOKE') {
+      const target = live.find(c => !c.resolved && c.ev.cat === 'INTERVENTION' && c.ev.code === ev.code);
+      if (target) {
+        target.revoked = true;
+        target.node.classList.add('revoked');
+        if (target.action) {
+          target.action.textContent = '[ NICHT MEHR ERFORDERLICH ]';
+          target.action.classList.remove('bait');
+        }
+        announce(ev.code + ' widerrufen. Kein Eingriff mehr erforderlich.');
+      }
     }
 
     const card = render(ev);
@@ -267,12 +333,21 @@ const PPGame = (() => {
       // genuine code — the real ones must be able to look boring.
       if (ev.cat === 'DISTRACTION' && (ev.tone === 'crit' || ev.tone === 'r3mi')) btn.classList.add('bait');
       btn.textContent = ev.action;
+      if (ev.hold) btn.classList.add('needs-hold');
       // The screen reader hears exactly what the screen shows: the chip
       // and the headline. No more, no less.
       btn.setAttribute('aria-label', `${ev.action.replace(/[[\]]/g, '').trim()} — ${ev.chip}: ${ev.head}`);
-      btn.addEventListener('click', () => press(card));
+      if (ev.hold) attachHold(btn, card);
+      else btn.addEventListener('click', () => press(card));
       node.appendChild(btn);
       card.action = btn;
+
+      if (ev.hold) {
+        const hint = document.createElement('div');
+        hint.className = 'evt-holdhint';
+        hint.setAttribute('role', 'status');
+        node.appendChild(hint);
+      }
 
       const bar = document.createElement('div');
       bar.className = 'evt-life';
@@ -281,6 +356,73 @@ const PPGame = (() => {
     }
 
     return card;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     HOLD TO CONFIRM
+     Some maintenance codes want sustained contact rather than a tap —
+     the facility's idea of making sure you meant it. Same construction
+     as the monitor's power switch: the hit target never moves, only
+     the fill inside it grows.
+     A tap that is too short is NOT punished. It reports what it wanted
+     and lets the player try again, because the first time anyone meets
+     this the correct instinct is to tap.
+     ═══════════════════════════════════════════════════════════════ */
+  const HOLD_MS = 800;
+
+  function attachHold(btn, card) {
+    let raf = null, from = 0, active = false;
+
+    const stop = () => {
+      active = false;
+      if (raf) cancelAnimationFrame(raf);
+      raf = null;
+      btn.classList.remove('holding');
+      btn.style.setProperty('--hold', '0%');
+    };
+
+    const tick = () => {
+      if (!active) return;
+      const p = Math.min(1, (now() - from) / HOLD_MS);
+      btn.style.setProperty('--hold', (p * 100).toFixed(1) + '%');
+      if (p >= 1) { stop(); press(card); return; }
+      raf = requestAnimationFrame(tick);
+    };
+
+    const begin = (e) => {
+      if (card.resolved || active) return;
+      if (e && e.preventDefault) e.preventDefault();
+      active = true;
+      from = now();
+      btn.classList.add('holding');
+      try { if (e && e.pointerId != null) btn.setPointerCapture(e.pointerId); } catch (_) {}
+      tick();
+    };
+
+    const end = () => {
+      if (!active) return;
+      const held = now() - from;
+      stop();
+      if (held < HOLD_MS && !card.resolved) {
+        const note = card.node.querySelector('.evt-holdhint');
+        if (note) {
+          note.textContent = 'HALTEN — NICHT ANTIPPEN.';
+          setTimeout(() => { if (note.isConnected) note.textContent = ''; }, 1600);
+        }
+        PPAudio.tone({ freq: 300, type: 'square', dur: 0.05, vol: 0.07 });
+      }
+    };
+
+    btn.addEventListener('pointerdown', begin);
+    btn.addEventListener('pointerup', end);
+    btn.addEventListener('pointercancel', stop);
+    btn.addEventListener('pointerleave', stop);
+    btn.addEventListener('keydown', e => {
+      if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) begin(e);
+    });
+    btn.addEventListener('keyup', e => { if (e.key === 'Enter' || e.key === ' ') end(); });
+    btn.addEventListener('blur', stop);
+    btn.addEventListener('click', e => e.preventDefault());
   }
 
   /* ─── the lifetime bars, one loop for all of them ─────────────── */
@@ -307,6 +449,23 @@ const PPGame = (() => {
   function press(card) {
     if (card.resolved || !running) return;
     const ev = card.ev;
+
+    // A code that was already closed, or has since been revoked, is a
+    // code that needs nothing. Pressing it is work like any other.
+    if (ev.cat === 'CLOSED' || card.revoked) {
+      card.resolved = true;
+      detach(card);
+      if (card.action) card.action.disabled = true;
+      stats.unnecessary++;
+      adjust(-COST_UNNECESSARY);
+      verdict(card, 'bad', `KEIN EINGRIFF ERFORDERLICH. −${COST_UNNECESSARY} %`);
+      PPAudio.wrong();
+      announce(`Kein Eingriff erforderlich. Pausenstabilität minus ${COST_UNNECESSARY} Prozent.`);
+      say(ev.onAct, ev.id || ev.code);
+      fade(card.node, 3200);
+      return;
+    }
+
     card.resolved = true;
     detach(card);
     if (card.action) card.action.disabled = true;
@@ -317,14 +476,14 @@ const PPGame = (() => {
       verdict(card, 'ok', 'INTERVENTION KORREKT.');
       if (ev.klonk) PPAudio.klonk(); else PPAudio.good();
       announce('Intervention korrekt.');
-      if (ev.onAct) PPDialogue.say(ev.onAct, { auto: true });
+      say(ev.onAct, ev.id);
 
     } else if (ev.cat === 'SPECIAL') {
       stats.social++;
       verdict(card, 'neut', 'ZWISCHENMENSCHLICH. NICHT ALS ARBEIT GEWERTET.');
       PPAudio.good();
       announce('Nicht als Arbeit gewertet. Keine Auswirkung.');
-      if (ev.onAct) PPDialogue.say(ev.onAct, { auto: true });
+      say(ev.onAct, ev.id);
 
     } else {
       stats.unnecessary++;
@@ -332,7 +491,7 @@ const PPGame = (() => {
       verdict(card, 'bad', `UNNÖTIGE ARBEIT ERKANNT. −${COST_UNNECESSARY} %`);
       PPAudio.wrong();
       announce(`Unnötige Arbeit erkannt. Pausenstabilität minus ${COST_UNNECESSARY} Prozent.`);
-      if (ev.onAct) PPDialogue.say(ev.onAct, { auto: true });
+      say(ev.onAct, ev.id || ev.head);
     }
 
     fade(card.node, 3200);
@@ -357,6 +516,19 @@ const PPGame = (() => {
       return;
     }
 
+    // A closed or revoked code expiring is the right outcome.
+    if (ev.cat === 'CLOSED' || card.revoked) {
+      verdict(card, 'ok', 'KEIN EINGRIFF ERKANNT. KORREKT.');
+      if (!culled) say(ev.onIgnore);
+      fade(card.node, culled ? 400 : 2600);
+      return;
+    }
+    if (ev.cat === 'REVOKE') {          // the notice itself just goes
+      card.node.classList.add('resolved');
+      fade(card.node, culled ? 300 : 1400);
+      return;
+    }
+
     if (ev.cat === 'INTERVENTION') {
       stats.missed++;
       adjust(-COST_MISSED);
@@ -364,15 +536,15 @@ const PPGame = (() => {
       if (ev.missCoffee) { stats.coffeeLost++; PPAudio.spill(); }
       else PPAudio.wrong();
       announce(`${ev.code} nicht bearbeitet. Pausenstabilität minus ${COST_MISSED} Prozent.`);
-      if (ev.onMiss) PPDialogue.say(ev.onMiss, { auto: true });
+      say(ev.onMiss, ev.id);
 
     } else if (ev.cat === 'SPECIAL') {
       verdict(card, 'neut', 'KEIN EINGRIFF. FOLGENLOS.');
-      if (ev.onIgnore && !culled) PPDialogue.say(ev.onIgnore, { auto: true });
+      if (!culled) say(ev.onIgnore, ev.id);
 
     } else {
       verdict(card, 'ok', 'KEIN EINGRIFF ERKANNT. KORREKT.');
-      if (ev.onIgnore && !culled) PPDialogue.say(ev.onIgnore, { auto: true });
+      if (!culled) say(ev.onIgnore, ev.id || ev.head);
     }
 
     fade(card.node, culled ? 400 : 2600);

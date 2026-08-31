@@ -152,12 +152,15 @@ const PPEvents = (() => {
       action: '[ TASSE SICHERN ]',
       life: 9000, klonk: true,
       onAct: [
-        { speaker: 'R-3MI', text: '„HA!“' },
-        { speaker: 'V-TGM', text: 'Congratulations. You saved a cup.', sub: 'Gratuliere. Du hast eine Tasse gerettet.' },
+        [ { speaker: 'R-3MI', text: '„HA!“' },
+          { speaker: 'V-TGM', text: 'Congratulations. You saved a cup.', sub: 'Gratuliere. Du hast eine Tasse gerettet.' } ],
+        [ { speaker: 'R-3MI', text: '„Schon wieder diese Tasse.“' },
+          { speaker: 'V-TGM', text: 'Stop putting it there.', sub: 'Dann stell sie nicht dorthin.' } ],
       ],
       onMiss: [
-        { speaker: 'R-3MI', text: '„…Oh.“' },
-        { speaker: 'V-TGM', text: 'That one mattered.', sub: 'Die war wichtig.' },
+        [ { speaker: 'R-3MI', text: '„…Oh.“' },
+          { speaker: 'V-TGM', text: 'That one mattered.', sub: 'Die war wichtig.' } ],
+        [ { speaker: 'V-TGM', text: 'Same cup. Same edge. Same result.', sub: 'Gleiche Tasse. Gleiche Kante. Gleiches Ergebnis.' } ],
       ],
       missCoffee: true,
     },
@@ -183,12 +186,16 @@ const PPEvents = (() => {
       action: '[ STABILISIEREN ]',
       life: 6000, klonk: true,
       onAct: [
-        { speaker: 'R-3MI', text: '„Das war ich! Das war ein echter!“' },
-        { speaker: 'V-TGM', text: 'It was. Well done.', sub: 'Ja. Gut gemacht.' },
+        [ { speaker: 'R-3MI', text: '„Das war ich! Das war ein echter!“' },
+          { speaker: 'V-TGM', text: 'It was. Well done.', sub: 'Ja. Gut gemacht.' } ],
+        [ { speaker: 'V-TGM', text: 'The chair thanks you.', sub: 'Der Stuhl dankt dir.' },
+          { speaker: 'R-3MI', text: '„Der Stuhl kann nicht danken.“' } ],
       ],
       onMiss: [
-        { speaker: 'SYSTEM', text: 'STUHL 02 ABGESENKT. 4 cm.' },
-        { speaker: 'R-3MI', text: '„Ich sitze da nicht mehr drauf.“' },
+        [ { speaker: 'SYSTEM', text: 'STUHL 02 ABGESENKT. 4 cm.' },
+          { speaker: 'R-3MI', text: '„Ich sitze da nicht mehr drauf.“' } ],
+        [ { speaker: 'SYSTEM', text: 'STUHL 02 ABGESENKT. WEITERE 4 cm.' },
+          { speaker: 'V-TGM', text: 'At this rate he will be sitting on the floor.', sub: 'So sitzt er bald auf dem Boden.' } ],
       ],
     },
     M11: {
@@ -213,11 +220,17 @@ const PPEvents = (() => {
       action: '[ ABSCHALTEN ]',
       life: 6500, klonk: true,
       onAct: [
-        { speaker: 'V-TGM', text: 'Good catch.', sub: 'Gut gesehen.' },
+        [ { speaker: 'V-TGM', text: 'Good catch.', sub: 'Gut gesehen.' } ],
+        [ { speaker: 'R-3MI', text: '„Der stand da schon, als wir ankamen.“' },
+          { speaker: 'V-TGM', text: 'It did.', sub: 'Stimmt.' } ],
+        [ { speaker: 'R-3MI', text: '„Ich habe ihn ausgemacht. Das war Arbeit.“' },
+          { speaker: 'V-TGM', text: 'That one was allowed.', sub: 'Die war erlaubt.' } ],
       ],
       onMiss: [
-        { speaker: 'SYSTEM', text: 'WASSERKOCHER: THERMISCHE ABSCHALTUNG. GERUCH ERFASST.' },
-        { speaker: 'R-3MI', text: '„Nicht schon wieder.“' },
+        [ { speaker: 'SYSTEM', text: 'WASSERKOCHER: THERMISCHE ABSCHALTUNG. GERUCH ERFASST.' },
+          { speaker: 'R-3MI', text: '„Nicht schon wieder.“' } ],
+        [ { speaker: 'SYSTEM', text: 'WASSERKOCHER: ZWEITE THERMISCHE ABSCHALTUNG.' },
+          { speaker: 'V-TGM', text: 'He is going to smell that for a week.', sub: 'Das riecht er noch nächste Woche.' } ],
       ],
     },
     M04: {
@@ -226,13 +239,22 @@ const PPEvents = (() => {
       body: 'SEIT 90 SEKUNDEN. WARTUNGSCODE VERGEBEN.',
       action: '[ TÜR SCHLIESSEN ]',
       life: 6000, klonk: true,
+      // Pools, not lines: M-04 shows up twice in a full run, and the
+      // same protest about the same fridge twice is worse than silence.
       onAct: [
-        { speaker: 'R-3MI', text: '„Das war nicht ich.“' },
-        { speaker: 'V-TGM', text: 'Nobody said it was.', sub: 'Das hat niemand behauptet.' },
+        [ { speaker: 'R-3MI', text: '„Das war nicht ich.“' },
+          { speaker: 'V-TGM', text: 'Nobody said it was.', sub: 'Das hat niemand behauptet.' } ],
+        [ { speaker: 'R-3MI', text: '„Wer lässt denn einen Kühlschrank offen?“' },
+          { speaker: 'V-TGM', text: 'Someone on a break, apparently.', sub: 'Offenbar jemand in einer Pause.' } ],
+        [ { speaker: 'R-3MI', text: '„Zum Glück hat sich noch kein Eis gebildet.“' },
+          { speaker: 'V-TGM', text: 'You checked?', sub: 'Du hast nachgesehen?' },
+          { speaker: 'R-3MI', text: '„…nein. Ich hoffe es.“' } ],
       ],
       onMiss: [
-        { speaker: 'SYSTEM', text: 'KÜHLKETTE UNTERBROCHEN. MILCH: NEU BEWERTET.' },
-        { speaker: 'V-TGM', text: 'We are not drinking that.', sub: 'Das trinken wir nicht.' },
+        [ { speaker: 'SYSTEM', text: 'KÜHLKETTE UNTERBROCHEN. MILCH: NEU BEWERTET.' },
+          { speaker: 'V-TGM', text: 'We are not drinking that.', sub: 'Das trinken wir nicht.' } ],
+        [ { speaker: 'SYSTEM', text: 'KÜHLSCHRANK WEITERHIN OFFEN. INNENTEMPERATUR: RAUMTEMPERATUR.' },
+          { speaker: 'R-3MI', text: '„Das ist jetzt einfach ein Schrank.“' } ],
       ],
     },
     M05: {
@@ -242,15 +264,46 @@ const PPEvents = (() => {
       action: '[ ABSCHALTEN ]',
       life: 7000, klonk: true,
       onAct: [
-        { speaker: 'R-3MI', text: '„Siehst du? Ich kann unterscheiden.“' },
-        { speaker: 'V-TGM', text: 'Nobody doubted you. Recently.', sub: 'Das hat niemand bezweifelt. In letzter Zeit.' },
+        [ { speaker: 'R-3MI', text: '„Siehst du? Ich kann unterscheiden.“' },
+          { speaker: 'V-TGM', text: 'Nobody doubted you. Recently.', sub: 'Das hat niemand bezweifelt. In letzter Zeit.' } ],
+        [ { speaker: 'V-TGM', text: 'Off. Good.', sub: 'Aus. Gut.' },
+          { speaker: 'R-3MI', text: '„Ich mache das gern. Sachen ausschalten.“' } ],
       ],
       onMiss: [
-        { speaker: 'SYSTEM', text: 'WÄRMEPLATTE WEITERHIN IN BETRIEB. GERUCH ERFASST.' },
-        { speaker: 'R-3MI', text: '„Riecht ihr das auch?“' },
+        [ { speaker: 'SYSTEM', text: 'WÄRMEPLATTE WEITERHIN IN BETRIEB. GERUCH ERFASST.' },
+          { speaker: 'R-3MI', text: '„Riecht ihr das auch?“' } ],
+        [ { speaker: 'SYSTEM', text: 'WÄRMEPLATTE: 44 MINUTEN.' },
+          { speaker: 'V-TGM', text: 'Nobody is going to want that pot.', sub: 'Die Kanne will danach niemand mehr.' } ],
       ],
     },
   };
+
+  /* ═══ CLOSED — a maintenance code somebody already dealt with ═══
+     Carries a real M-code and needs absolutely nothing. This is the
+     round-3 lesson: read the whole line, do not pattern-match on the
+     prefix. ═══════════════════════════════════════════════════════ */
+  const CLOSED = [
+    { code: 'M-06', head: 'LEUCHTE 3 ERSETZT', body: 'BEARBEITET DURCH: WARTUNGSEINHEIT 12. KEIN EINGRIFF ERFORDERLICH.', action: '[ QUITTIEREN ]' },
+    { code: 'M-09', head: 'FILTER GEWECHSELT', body: 'BEARBEITET DURCH: WARTUNGSEINHEIT 12. KEIN EINGRIFF ERFORDERLICH.', action: '[ QUITTIEREN ]' },
+    { code: 'M-01', head: 'TÜRDICHTUNG GEPRÜFT', body: 'BEARBEITET DURCH: WARTUNGSEINHEIT 12. KEIN EINGRIFF ERFORDERLICH.', action: '[ QUITTIEREN ]' },
+  ];
+
+  /* ═══ REVOKE — a code the facility takes back ═══════════════════
+     Stands down whichever live code it names. Round-5 material: the
+     round where the Anlage argues with itself. ═════════════════════ */
+  function revoke(code) {
+    return {
+      cat: 'REVOKE', code, chip: code, tone: 'revoke', life: 5000,
+      head: code + ' WIDERRUFEN',
+      body: 'DIE MELDUNG WAR EIN ÜBERTRAGUNGSFEHLER. KEIN EINGRIFF ERFORDERLICH.',
+      onIgnore: [
+        [ { speaker: 'R-3MI', text: '„Also doch nicht.“' },
+          { speaker: 'V-TGM', text: 'Also not.', sub: 'Also nicht.' } ],
+        [ { speaker: 'R-3MI', text: '„Ich hatte mich schon vorbereitet.“' },
+          { speaker: 'V-TGM', text: 'I know you had.', sub: 'Ich weiß.' } ],
+      ],
+    };
+  }
 
   /* ── helpers ──────────────────────────────────────────────────── */
   function pick(pool, used) {
@@ -266,6 +319,36 @@ const PPEvents = (() => {
   function remi(used)  { const r = pick(REMI_BAIT, used); return { cat: 'DISTRACTION', chip: 'R-3MI', tone: 'r3mi', life: 8000, ...r }; }
   function social(id)  { const s = SOCIAL.find(x => x.id === id) || SOCIAL[0]; return { cat: 'SPECIAL', chip: 'SOZIAL', tone: 'r3mi', life: 9000, ...s }; }
   function real(id)    { return { cat: 'INTERVENTION', chip: INTERVENTIONS[id].code, ...INTERVENTIONS[id] }; }
+  /* A genuine code that must be HELD rather than tapped. */
+  function held(id)    { const e = real(id); return { ...e, hold: true,
+                                                     life: (e.life || 7000) + 1500,
+                                                     chip: e.code + ' HALTEN' }; }
+  /* Shared, not rebuilt per message: every ERLEDIGT card draws from the
+     same pool, so pressing three different closed codes in one run gives
+     three different reactions instead of the same one three times. */
+  const CLOSED_ACT = [
+    [ { speaker: 'SYSTEM', text: 'MELDUNG WAR BEREITS ABGESCHLOSSEN. UNNÖTIGE ARBEIT ERKANNT.' },
+      { speaker: 'R-3MI', text: '„Da stand ein Code!“' },
+      { speaker: 'V-TGM', text: 'And next to it, the word ERLEDIGT.', sub: 'Und daneben das Wort ERLEDIGT.' } ],
+    [ { speaker: 'R-3MI', text: '„Ich quittiere gern Dinge.“' },
+      { speaker: 'V-TGM', text: 'We noticed.', sub: 'Das ist uns aufgefallen.' } ],
+    [ { speaker: 'V-TGM', text: 'Somebody already did that one.', sub: 'Das hat schon jemand erledigt.' },
+      { speaker: 'R-3MI', text: '„Dann hätte sie es nicht melden dürfen.“' },
+      { speaker: 'V-TGM', text: 'Take it up with her.', sub: 'Beschwer dich bei ihr.' } ],
+    [ { speaker: 'R-3MI', text: '„Ich wollte nur sichergehen.“' },
+      { speaker: 'V-TGM', text: 'You were sure. It said so.', sub: 'Du warst sicher. Es stand da.' } ],
+  ];
+  const CLOSED_IGNORE = [
+    [ { speaker: 'V-TGM', text: 'Correct. Nothing to do.', sub: 'Richtig. Nichts zu tun.' } ],
+    [ { speaker: 'R-3MI', text: '„Ich habe es gelesen. Ganz.“' },
+      { speaker: 'V-TGM', text: 'Growth.', sub: 'Fortschritt.' } ],
+  ];
+
+  function closed(used) {
+    const c = pick(CLOSED, used);
+    return { cat: 'CLOSED', chip: c.code + ' ERLEDIGT', tone: 'closed', life: 7000,
+             id: 'closed', ...c, onAct: CLOSED_ACT, onIgnore: CLOSED_IGNORE };
+  }
 
   /* Named fakes, where a specific joke has to land at a specific
      moment rather than being drawn from the pool. */
@@ -282,7 +365,7 @@ const PPEvents = (() => {
      recognising them, never surviving a dice roll.
      ═══════════════════════════════════════════════════════════════ */
   function rounds() {
-    const u = { info: new Set(), fake: new Set(), remi: new Set() };
+    const u = { info: new Set(), fake: new Set(), remi: new Set(), closed: new Set() };
 
     return [
       /* ── RUNDE 0 — the first button ─────────────────────────── */
@@ -362,53 +445,61 @@ const PPEvents = (() => {
 
       /* ── RUNDE 3 — R-3MI is the problem now ─────────────────── */
       {
-        id: 3, name: 'KOLLEGIALE STÖRUNG', duration: 52000,
-        banner: 'MELDUNGSAUFKOMMEN: NIEDRIG.',
+        id: 3, name: 'ABGESCHLOSSENE VORGÄNGE', duration: 56000,
+        banner: 'REGELERGÄNZUNG WIRD ÜBERTRAGEN.',
         script: [
           { t: 700, say: [
-            { speaker: 'SYSTEM', text: 'MELDUNGSAUFKOMMEN: NIEDRIG. PAUSE VERLÄUFT PLANMÄSSIG.' },
-            { speaker: 'R-3MI', text: '„Es ist so ruhig.“' },
-            { speaker: 'V-TGM', text: 'Yes.', sub: 'Ja.' },
-            { speaker: 'R-3MI', text: '„Beunruhigend ruhig.“' },
+            { speaker: 'SYSTEM', text: 'REGELERGÄNZUNG: EIN WARTUNGSCODE MIT DEM VERMERK ERLEDIGT IST BEREITS BEARBEITET.' },
+            { speaker: 'SYSTEM', text: 'EIN EINGRIFF IST DANN NICHT ERFORDERLICH.' },
+            { speaker: 'R-3MI', text: '„Warum meldet sie ihn dann?“' },
+            { speaker: 'V-TGM', text: 'For completeness.', sub: 'Der Vollständigkeit halber.' },
+            { speaker: 'R-3MI', text: '„Ich hasse Vollständigkeit.“' },
           ] },
-          { t: 7000,  ev: remi(u.remi) },
-          { t: 14000, ev: info(u.info) },
-          { t: 19000, ev: remi(u.remi) },
-          { t: 26000, ev: real('M08') },      // the quiet round still bites
-          { t: 34000, ev: social('soc_calm') },
-          { t: 43000, ev: info(u.info) },
+          { t: 800,   rule: 'ERLEDIGT' },
+          { t: 12000, ev: closed(u.closed) },        // taught, then tested
+          { t: 20000, ev: remi(u.remi) },
+          { t: 27000, ev: real('M08') },             // and a real one right after
+          { t: 36000, ev: closed(u.closed) },
+          { t: 44000, ev: social('soc_calm') },
+          { t: 50000, ev: info(u.info) },
         ],
       },
 
       /* ── RUNDE 4 — presentation warfare ─────────────────────── */
       {
-        id: 4, name: 'DARSTELLUNGSTEST', duration: 60000,
-        banner: 'DARSTELLUNGSPARAMETER WERDEN VARIIERT.',
+        id: 4, name: 'DAUERKONTAKT', duration: 64000,
+        banner: 'REGELERGÄNZUNG WIRD ÜBERTRAGEN.',
         script: [
           { t: 500, say: [
-            { speaker: 'SYSTEM', text: 'UNTERSUCHUNG: BEEINFLUSST DARSTELLUNG DIE URTEILSFÄHIGKEIT?' },
-            { speaker: 'V-TGM', text: 'It absolutely does.', sub: 'Definitiv ja.' },
-            { speaker: 'R-3MI', text: '„Bei mir nicht.“' },
-            { speaker: 'V-TGM', text: 'Remi, you pressed a button because it was blinking.', sub: 'Remi, du hast einen Knopf gedrückt, weil er blinkte.' },
-            { speaker: 'R-3MI', text: '„Das war Forschung.“' },
+            { speaker: 'SYSTEM', text: 'REGELERGÄNZUNG: EIN WARTUNGSCODE MIT DEM VERMERK HALTEN ERFORDERT DAUERHAFTEN KONTAKT.' },
+            { speaker: 'SYSTEM', text: 'NICHT ANTIPPEN. HALTEN.' },
+            { speaker: 'R-3MI', text: '„Wie lange?“' },
+            { speaker: 'V-TGM', text: 'Until it stops.', sub: 'Bis es aufhört.' },
+            { speaker: 'R-3MI', text: '„Das ist keine Zeitangabe.“' },
           ] },
-          { t: 8000,  ev: { ...fake(u.fake), tone: 'crit', chip: 'KRITISCH' } },
-          { t: 14000, ev: info(u.info) },
-          { t: 19000, ev: real('M07') },                       // quiet, small, grey — and real
-          { t: 27000, ev: { ...fake(u.fake), tone: 'crit', chip: 'ALARM' } },
-          { t: 33000, ev: info(u.info) },
-          { t: 38000, ev: { ...fake(u.fake), tone: 'crit', chip: 'DRINGEND' } },
-          { t: 44000, ev: real('M04') },
-          { t: 52000, ev: fake(u.fake) },
+          { t: 600,   rule: 'HALTEN' },
+          { t: 11000, ev: held('M05') },                      // taught, then tested
+          { t: 20000, ev: { ...fake(u.fake), tone: 'crit', chip: 'KRITISCH' } },
+          { t: 26000, ev: real('M07') },                      // quiet, small, grey — and real
+          { t: 33000, ev: closed(u.closed) },
+          { t: 39000, ev: { ...fake(u.fake), tone: 'crit', chip: 'ALARM' } },
+          { t: 45000, ev: held('M04') },
+          { t: 55000, ev: { ...fake(u.fake), tone: 'crit', chip: 'DRINGEND' } },
         ],
       },
 
       /* ── RUNDE 5 — the Anlage argues with itself ────────────── */
       {
-        id: 5, name: 'ZIELKONFLIKT', duration: 48000,
-        banner: 'BITTE NICHT EINGREIFEN.',
+        id: 5, name: 'ZIELKONFLIKT', duration: 56000,
+        banner: 'REGELERGÄNZUNG WIRD ÜBERTRAGEN.',
         script: [
-          { t: 600,  say: [{ speaker: 'SYSTEM', text: 'BITTE NICHT EINGREIFEN.' }] },
+          { t: 600,  say: [
+            { speaker: 'SYSTEM', text: 'REGELERGÄNZUNG: EIN WARTUNGSCODE KANN WIDERRUFEN WERDEN.' },
+            { speaker: 'SYSTEM', text: 'NACH EINEM WIDERRUF IST KEIN EINGRIFF MEHR ERFORDERLICH.' },
+            { speaker: 'R-3MI', text: '„Sie nimmt ihre eigenen Meldungen zurück?“' },
+            { speaker: 'V-TGM', text: 'She is having a day.', sub: 'Sie hat gerade einen Tag.' },
+          ] },
+          { t: 700,  rule: 'WIDERRUFEN' },
           { t: 5000, ev: fakeNamed({
               chip: 'WARNUNG', tone: 'warn',
               head: 'KEIN EINGRIFF ERKANNT',
@@ -427,10 +518,12 @@ const PPEvents = (() => {
                 { speaker: 'R-3MI', text: '„ICH WERDE DARAUF GETESTET, NICHT ZU DENKEN.“' },
               ],
             }) },
-          { t: 18000, ev: info(u.info) },
-          { t: 23000, ev: real('M05') },
-          { t: 32000, ev: fake(u.fake) },
-          { t: 40000, ev: info(u.info) },
+          { t: 14000, ev: real('M02') },
+          { t: 17500, ev: revoke('M-02') },      // taught, then withdrawn
+          { t: 26000, ev: info(u.info) },
+          { t: 31000, ev: real('M05') },         // and this one is NOT withdrawn
+          { t: 40000, ev: fake(u.fake) },
+          { t: 47000, ev: closed(u.closed) },
         ],
       },
 
@@ -454,7 +547,7 @@ const PPEvents = (() => {
           { t: 17000, ev: info(u.info) },
           { t: 19000, ev: real('M08') },
           { t: 21500, ev: social('soc_nein') },
-          { t: 24000, ev: fake(u.fake) },
+          { t: 24000, ev: closed(u.closed) },
           { t: 26000, ev: info(u.info) },
           { t: 28000, ev: { ...fake(u.fake), tone: 'crit', chip: 'KRITISCH' } },
           { t: 30500, ev: real('M02') },
@@ -463,12 +556,13 @@ const PPEvents = (() => {
           { t: 37000, ev: remi(u.remi) },
           { t: 39000, ev: { ...fake(u.fake), tone: 'crit', chip: 'DRINGEND' } },
           { t: 41500, ev: info(u.info) },
-          { t: 43500, ev: real('M04') },
+          { t: 43500, ev: held('M04') },
           { t: 46000, ev: fake(u.fake) },
           { t: 48000, ev: info(u.info) },
           { t: 50000, ev: { ...fake(u.fake), tone: 'crit' } },
           { t: 52500, ev: fake(u.fake) },
-          { t: 55000, ev: real('M03') },
+          { t: 52000, ev: real('M03') },
+          { t: 55500, ev: revoke('M-03') },
           { t: 57500, ev: info(u.info) },
           { t: 59500, ev: fake(u.fake) },
           { t: 62000, ev: { ...fake(u.fake), tone: 'crit', chip: 'ALARM' } },
@@ -505,14 +599,19 @@ const PPEvents = (() => {
 
     const check = (e, where) => {
       const text = [e.chip, e.head, e.body, e.action].join(' | ');
-      if (e.cat === 'INTERVENTION') {
-        if (!e.code || !/^M-\d{2}$/.test(e.code)) problems.push(`${where}: intervention without a well-formed M-code`);
+      // Three kinds legitimately carry a code: a genuine intervention,
+      // one that has already been closed, and a withdrawal of one.
+      // Everything else must be free of the pattern, or the single rule
+      // the whole game rests on stops being decidable.
+      if (e.cat === 'INTERVENTION' || e.cat === 'CLOSED' || e.cat === 'REVOKE') {
+        if (!e.code || !/^M-\d{2}$/.test(e.code)) problems.push(`${where}: ${e.cat} without a well-formed M-code`);
       } else if (looksLikeCode(text)) {
         problems.push(`${where}: non-intervention contains an M-code pattern → "${text}"`);
       }
     };
 
     INFO.forEach((e, i)        => check({ cat: 'INFO', ...e }, `INFO[${i}]`));
+    CLOSED.forEach((e, i)      => check({ cat: 'CLOSED', ...e }, `CLOSED[${i}]`));
     DISTRACTION.forEach((e, i) => check({ cat: 'DISTRACTION', ...e }, `DISTRACTION[${i}]`));
     REMI_BAIT.forEach((e, i)   => check({ cat: 'DISTRACTION', ...e }, `REMI_BAIT[${i}]`));
     SOCIAL.forEach((e, i)      => check({ cat: 'SPECIAL', ...e }, `SOCIAL[${i}]`));
@@ -527,7 +626,7 @@ const PPEvents = (() => {
     return problems;
   }
 
-  return { rounds, verify, INTERVENTIONS, INFO, DISTRACTION, REMI_BAIT, SOCIAL };
+  return { rounds, verify, INTERVENTIONS, INFO, DISTRACTION, REMI_BAIT, SOCIAL, CLOSED };
 })();
 
 if (typeof window !== 'undefined') window.PPEvents = PPEvents;

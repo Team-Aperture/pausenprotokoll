@@ -47,6 +47,7 @@
       add('[ PAUSE BEGINNEN ]', 'primary', () => begin(null));
     }
     add('[ VERSUCHSHINWEISE ]', 'small', openBriefing);
+    add('[ ERFOLGE ]', 'small', openAwards);
 
     setTimeout(() => actions.querySelector('.caf-btn')?.focus(), 900);
   }
@@ -87,6 +88,40 @@
   function closeOverlay() {
     document.getElementById('overlayBackdrop').classList.add('hidden');
     document.getElementById('briefing').classList.add('hidden');
+    document.getElementById('awards').classList.add('hidden');
+  }
+
+  /* ═══ ERFOLGE ══════════════════════════════════════════════════
+     Built from the same list the results screen scores against, so
+     the two can never drift apart. A locked entry still names itself
+     and what it is for — the point is to tell the player what is
+     worth trying, not to hide it behind a question mark. ────────── */
+  function openAwards() {
+    const list = document.getElementById('awardList');
+    const have = PPState.awards();
+    const all  = PPResults.AWARDS;
+
+    list.innerHTML = '';
+    all.forEach(a => {
+      const got = have.indexOf(a.id) >= 0;
+      const li = document.createElement('li');
+      li.className = 'award-item' + (got ? ' got' : '');
+      li.innerHTML =
+        `<span class="aw-mark" aria-hidden="true">${got ? '✓' : '·'}</span>` +
+        `<span class="aw-body"><span class="aw-name"></span><span class="aw-desc"></span></span>`;
+      li.querySelector('.aw-name').textContent = a.name;
+      li.querySelector('.aw-desc').textContent = a.desc;
+      // Not colour alone: the state is in the text too.
+      li.setAttribute('aria-label', `${a.name}. ${a.desc} ${got ? 'Erreicht.' : 'Noch offen.'}`);
+      list.appendChild(li);
+    });
+
+    const count = document.getElementById('awardsCount');
+    count.textContent = `${have.filter(id => all.some(a => a.id === id)).length} von ${all.length} · ${PPState.plays()} ${PPState.plays() === 1 ? 'Pause' : 'Pausen'} absolviert`;
+
+    document.getElementById('overlayBackdrop').classList.remove('hidden');
+    document.getElementById('awards').classList.remove('hidden');
+    setTimeout(() => document.getElementById('awardsClose')?.focus(), 60);
   }
 
   /* ═══ SOUND ═════════════════════════════════════════════════════ */
@@ -140,9 +175,12 @@
 
     document.getElementById('briefBtn').addEventListener('click', openBriefing);
     document.getElementById('briefClose').addEventListener('click', closeOverlay);
+    document.getElementById('awardsClose').addEventListener('click', closeOverlay);
     document.getElementById('overlayBackdrop').addEventListener('click', closeOverlay);
     document.getElementById('endSkip').addEventListener('click', () => {
-      PPResults.skipEnding(PPGame.stateFor().stats?.poweredOff);
+      const st = PPGame.stateFor();
+      PPResults.skipEnding(st.stats?.poweredOff,
+                           PPResults.rankFor(Math.round(st.stability), st.stats));
     });
 
     // The little green lamp on the monitor's plate is a switch.
@@ -155,7 +193,10 @@
     publishScreenInset();
 
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && !document.getElementById('briefing').classList.contains('hidden')) closeOverlay();
+      if (e.key !== 'Escape') return;
+      const open = !document.getElementById('briefing').classList.contains('hidden')
+                || !document.getElementById('awards').classList.contains('hidden');
+      if (open) closeOverlay();
     });
 
     // Browsers only allow audio after a gesture; wake the context on the

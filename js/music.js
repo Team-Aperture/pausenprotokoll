@@ -29,7 +29,11 @@
 const PPMusic = (() => {
   'use strict';
 
-  const SRC = 'assets/music/the-roost-remix.mp3';
+  /* Swap the file at this path to change the track — nothing else in
+     the code needs to know. A short loop (30-60s) is ideal: it is
+     filtered, ducked and faded here, so it never has to carry the
+     scene on its own. */
+  const SRC = 'assets/music/kantine-loop.mp3';
 
   // Quiet enough to sit under a conversation held by two small robots.
   const VOL_FULL   = 0.34;
