@@ -55,7 +55,10 @@
   /* Hear why the break is happening, then fly into the terminal.
      Resuming an interrupted run skips the explanation — you have
      already had it. */
+  let starting = false;
   function begin(resumeRun) {
+    if (starting) return;            // a double-click is still one break
+    starting = true;
     PPAudio.resume();
     PPAudio.hum.start();          // the room has been humming all along
     PPMusic.start();
@@ -110,9 +113,12 @@
         `<span class="aw-mark" aria-hidden="true">${got ? '✓' : '·'}</span>` +
         `<span class="aw-body"><span class="aw-name"></span><span class="aw-desc"></span></span>`;
       li.querySelector('.aw-name').textContent = a.name;
-      li.querySelector('.aw-desc').textContent = a.desc;
+      // An unearned award shows its `hint` if it has one — that is how the
+      // secret ending stays a secret while still having a visible slot.
+      li.querySelector('.aw-desc').textContent = got ? a.desc : (a.hint || a.desc);
       // Not colour alone: the state is in the text too.
-      li.setAttribute('aria-label', `${a.name}. ${a.desc} ${got ? 'Erreicht.' : 'Noch offen.'}`);
+      li.setAttribute('aria-label',
+        `${a.name}. ${got ? a.desc : (a.hint || a.desc)} ${got ? 'Erreicht.' : 'Noch offen.'}`);
       list.appendChild(li);
     });
 
@@ -146,6 +152,10 @@
       const inset = `${Math.round(r.top)}px ${Math.round(window.innerWidth - r.right)}px `
                   + `${Math.round(window.innerHeight - r.bottom)}px ${Math.round(r.left)}px`;
       document.documentElement.style.setProperty('--screen-inset', inset);
+      // The status rail is sticky inside the screen, so it needs to know
+      // how tall the screen actually is — vh would be the whole window,
+      // which is a good deal more room than it has.
+      document.documentElement.style.setProperty('--screen-h', Math.round(r.height) + 'px');
     };
     apply();
     try { new ResizeObserver(apply).observe(screen); } catch (_) {}
@@ -183,8 +193,10 @@
                            PPResults.rankFor(Math.round(st.stability), st.stats));
     });
 
-    // The little green lamp on the monitor's plate is a switch.
-    PPPower.init(() => PPGame.poweredOff());
+    // The little green lamp on the monitor's plate is a switch — live
+    // only while there is still a break to interrupt.
+    PPPower.init(() => PPGame.poweredOff(),
+                 () => !PPGame.stateFor().finished);
 
     // The results and the ending live outside the monitor but should
     // look like they are on it, so they are clipped to its measured
@@ -212,12 +224,14 @@
       document.getElementById('endSkip').classList.add('hidden');
       document.getElementById('feed').innerHTML = '';
       document.getElementById('feedIdle').classList.remove('hidden');
-      document.getElementById('ruleCard').classList.add('hidden');
-      document.getElementById('ruleSocial').classList.add('hidden');
       PPPower.reset();                 // the monitor comes back on
+      // The rules are run state and PPGame.start() sets them; this used
+      // to hide two of the five here and leave the other three showing
+      // into the next run.
 
       if (kind === 'again') {
         // Straight back into the chair — no second trip across the room.
+        starting = false;
         document.getElementById('gameShell').classList.remove('hidden');
         PPGame.start(null);
       } else {
@@ -226,6 +240,7 @@
         PPAudio.hum.stop();
         PPMusic.hush(false, 1.2);
         PPMusic.setMuffled(true, 1.6);   // back behind the wall
+        starting = false;
         PPCafeteria.reset();
         showMenu(null);
       }

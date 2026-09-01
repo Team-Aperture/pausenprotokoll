@@ -5,17 +5,26 @@
  *
  * ── THE ONE RULE ───────────────────────────────────────────────
  *
- * A message requires action IF AND ONLY IF its chip is a
- * maintenance code of the form M-NN.
+ * A message requires action IF AND ONLY IF its chip is a facility
+ * code, and the LETTER of that code says what the action is:
  *
- * That is the entire puzzle, and it is enforced structurally rather
- * than remembered by hand:
+ *   N-NN   NORMAL      press it
+ *   H-NN   HALTEN      hold it
+ *   E-NN   ERLEDIGT    already handled — do nothing
+ *   W-NN   WIDERRUF    withdraws an earlier code — do nothing
  *
- *   • `cat: 'INTERVENTION'` is the only category that may carry a
- *     `code`, and every intervention MUST carry one.
- *   • No other message may contain the string "M-" anywhere in its
- *     chip, headline or body. verify() below asserts this at load
- *     and shouts in the console if a new joke ever breaks it.
+ * One glyph carries the whole decision. Under a calm screen that is
+ * trivial; at one message every 2.5 seconds it is the entire game.
+ * Each letter is taught in its own round BEFORE it is ever tested,
+ * so nothing here is ever a guess.
+ *
+ * It is enforced structurally rather than remembered by hand:
+ *
+ *   • Only INTERVENTION, CLOSED and REVOKE may carry a `code`, each
+ *     restricted to its own letter.
+ *   • No other message may contain the pattern anywhere in its chip,
+ *     headline or body. verify() below asserts this at load and
+ *     shouts in the console if a new joke ever breaks it.
  *
  * Consequently the Anlage is free to be as theatrical as it likes.
  * A fake can be enormous, scarlet, blinking and titled KRITISCH; a
@@ -28,7 +37,9 @@
  *
  *   INFO          no button at all. Nothing to get wrong.
  *   DISTRACTION   has a button. Pressing it is unnecessary work.
- *   INTERVENTION  has an M-code and a button. Must be pressed.
+ *   INTERVENTION  N- or H-code. Must be pressed, or held.
+ *   CLOSED        E-code. Carries a real code and needs nothing.
+ *   REVOKE        W-code. Stands down a code already on screen.
  *   SPECIAL       has a button, chip SOZIAL. Free either way — the
  *                 facility does not classify being nice to a
  *                 colleague as work. Announced the first time.
@@ -84,7 +95,7 @@ const PPEvents = (() => {
       ] },
     { chip: 'HINWEIS',   tone: 'quiet', head: 'FIRMWARE 4.1.9 VERFÜGBAR',  body: 'ÄNDERUNGEN: KEINE NENNENSWERTEN.',                        action: '[ JETZT AKTUALISIEREN ]' },
     { chip: 'HINWEIS',   tone: 'quiet', head: 'ARCHIVIERUNG EMPFOHLEN',    body: '4 EINTRÄGE SEIT 2031 UNSORTIERT.',                        action: '[ ARCHIVIEREN ]' },
-    { chip: 'WARTUNG',   tone: 'quiet', head: 'STUHL 02: GERINGFÜGIGE ABWEICHUNG', body: '0.4° // KEIN WARTUNGSCODE VERGEBEN.',            action: '[ AUSRICHTEN ]' },
+    { chip: 'WARTUNG',   tone: 'quiet', head: 'STUHL 02: GERINGFÜGIGE ABWEICHUNG', body: '0.4° // KEIN CODE VERGEBEN.',            action: '[ AUSRICHTEN ]' },
     { chip: 'ACHTUNG',   tone: 'warn',  head: 'KAFFEE WIRD KÄLTER',        body: 'VERLAUF: ERWARTUNGSGEMÄSS. PHYSIK: UNVERÄNDERT.',         action: '[ GEGENMASSNAHME EINLEITEN ]' },
     { chip: 'DRINGEND',  tone: 'warn',  head: 'PAUSENZEIT VERSTREICHT',    body: 'DAS IST DER ZWECK EINER PAUSE.',                          action: '[ PAUSE OPTIMIEREN ]' },
     { chip: 'WARNUNG',   tone: 'warn',  head: 'AKTIVITÄTSDEFIZIT ERKANNT', body: 'DAS TESTSUBJEKT TUT SEIT 20 SEKUNDEN NICHTS.',            action: '[ AKTIVITÄT NACHWEISEN ]' },
@@ -146,9 +157,9 @@ const PPEvents = (() => {
      wrong if it is left alone. ─────────────────────────────────── */
   const INTERVENTIONS = {
     M03: {
-      id: 'M03', code: 'M-03', tone: 'quiet',
+      id: 'M03', code: 'N-03', tone: 'quiet',
       head: 'TASSE INSTABIL',
-      body: 'SCHWERPUNKT AUSSERHALB DER STANDFLÄCHE. WARTUNGSCODE VERGEBEN.',
+      body: 'SCHWERPUNKT AUSSERHALB DER STANDFLÄCHE. CODE VERGEBEN.',
       action: '[ TASSE SICHERN ]',
       life: 9000, klonk: true,
       onAct: [
@@ -165,9 +176,9 @@ const PPEvents = (() => {
       missCoffee: true,
     },
     M07: {
-      id: 'M07', code: 'M-07', tone: 'quiet',
+      id: 'M07', code: 'N-07', tone: 'quiet',
       head: 'BECHER AM TISCHRAND',
-      body: 'ABSTAND ZUR KANTE: 4 mm. WARTUNGSCODE VERGEBEN.',
+      body: 'ABSTAND ZUR KANTE: 4 mm. CODE VERGEBEN.',
       action: '[ BECHER ZURÜCKSCHIEBEN ]',
       life: 7500, klonk: true,
       onAct: [
@@ -180,9 +191,9 @@ const PPEvents = (() => {
       missCoffee: true,
     },
     M02: {
-      id: 'M02', code: 'M-02', tone: 'warn',
+      id: 'M02', code: 'N-02', tone: 'warn',
       head: 'STUHL INSTABIL',
-      body: 'LAGER 3 LOSE. WARTUNGSCODE VERGEBEN.',
+      body: 'LAGER 3 LOSE. CODE VERGEBEN.',
       action: '[ STABILISIEREN ]',
       life: 6000, klonk: true,
       onAct: [
@@ -199,9 +210,9 @@ const PPEvents = (() => {
       ],
     },
     M11: {
-      id: 'M11', code: 'M-11', tone: 'crit',
+      id: 'M11', code: 'N-11', tone: 'crit',
       head: 'GETRÄNK VERSCHÜTTET',
-      body: 'AUSBREITUNG AKTIV. WARTUNGSCODE VERGEBEN.',
+      body: 'AUSBREITUNG AKTIV. CODE VERGEBEN.',
       action: '[ AUFWISCHEN ]',
       life: 6500,
       onAct: [
@@ -214,9 +225,9 @@ const PPEvents = (() => {
       ],
     },
     M08: {
-      id: 'M08', code: 'M-08', tone: 'info',
+      id: 'M08', code: 'N-08', tone: 'info',
       head: 'WASSERKOCHER OHNE INHALT',
-      body: 'HEIZT LEER. WARTUNGSCODE VERGEBEN.',
+      body: 'HEIZT LEER. CODE VERGEBEN.',
       action: '[ ABSCHALTEN ]',
       life: 6500, klonk: true,
       onAct: [
@@ -234,12 +245,12 @@ const PPEvents = (() => {
       ],
     },
     M04: {
-      id: 'M04', code: 'M-04', tone: 'warn',
+      id: 'M04', code: 'N-04', tone: 'warn',
       head: 'KÜHLSCHRANK OFFEN',
-      body: 'SEIT 90 SEKUNDEN. WARTUNGSCODE VERGEBEN.',
+      body: 'SEIT 90 SEKUNDEN. CODE VERGEBEN.',
       action: '[ TÜR SCHLIESSEN ]',
       life: 6000, klonk: true,
-      // Pools, not lines: M-04 shows up twice in a full run, and the
+      // Pools, not lines: N-04 shows up twice in a full run, and the
       // same protest about the same fridge twice is worse than silence.
       onAct: [
         [ { speaker: 'R-3MI', text: '„Das war nicht ich.“' },
@@ -258,9 +269,9 @@ const PPEvents = (() => {
       ],
     },
     M05: {
-      id: 'M05', code: 'M-05', tone: 'quiet',
+      id: 'M05', code: 'N-05', tone: 'quiet',
       head: 'WÄRMEPLATTE DAUERBETRIEB',
-      body: '41 MINUTEN. WARTUNGSCODE VERGEBEN.',
+      body: '41 MINUTEN. CODE VERGEBEN.',
       action: '[ ABSCHALTEN ]',
       life: 7000, klonk: true,
       onAct: [
@@ -283,18 +294,19 @@ const PPEvents = (() => {
      round-3 lesson: read the whole line, do not pattern-match on the
      prefix. ═══════════════════════════════════════════════════════ */
   const CLOSED = [
-    { code: 'M-06', head: 'LEUCHTE 3 ERSETZT', body: 'BEARBEITET DURCH: WARTUNGSEINHEIT 12. KEIN EINGRIFF ERFORDERLICH.', action: '[ QUITTIEREN ]' },
-    { code: 'M-09', head: 'FILTER GEWECHSELT', body: 'BEARBEITET DURCH: WARTUNGSEINHEIT 12. KEIN EINGRIFF ERFORDERLICH.', action: '[ QUITTIEREN ]' },
-    { code: 'M-01', head: 'TÜRDICHTUNG GEPRÜFT', body: 'BEARBEITET DURCH: WARTUNGSEINHEIT 12. KEIN EINGRIFF ERFORDERLICH.', action: '[ QUITTIEREN ]' },
+    { code: 'E-06', head: 'LEUCHTE 3 ERSETZT', body: 'BEARBEITET DURCH: WARTUNGSEINHEIT 12. KEIN EINGRIFF ERFORDERLICH.', action: '[ QUITTIEREN ]' },
+    { code: 'E-09', head: 'FILTER GEWECHSELT', body: 'BEARBEITET DURCH: WARTUNGSEINHEIT 12. KEIN EINGRIFF ERFORDERLICH.', action: '[ QUITTIEREN ]' },
+    { code: 'E-01', head: 'TÜRDICHTUNG GEPRÜFT', body: 'BEARBEITET DURCH: WARTUNGSEINHEIT 12. KEIN EINGRIFF ERFORDERLICH.', action: '[ QUITTIEREN ]' },
   ];
 
   /* ═══ REVOKE — a code the facility takes back ═══════════════════
      Stands down whichever live code it names. Round-5 material: the
      round where the Anlage argues with itself. ═════════════════════ */
-  function revoke(code) {
+  function revoke(target) {
+    const code = target.replace(/^[NH]-/, 'W-');     // W-02 withdraws N-02
     return {
-      cat: 'REVOKE', code, chip: code, tone: 'revoke', life: 5000,
-      head: code + ' WIDERRUFEN',
+      cat: 'REVOKE', code, target, chip: code, tone: 'revoke', life: 5000,
+      head: target + ' WIDERRUFEN',
       body: 'DIE MELDUNG WAR EIN ÜBERTRAGUNGSFEHLER. KEIN EINGRIFF ERFORDERLICH.',
       onIgnore: [
         [ { speaker: 'R-3MI', text: '„Also doch nicht.“' },
@@ -320,9 +332,14 @@ const PPEvents = (() => {
   function social(id)  { const s = SOCIAL.find(x => x.id === id) || SOCIAL[0]; return { cat: 'SPECIAL', chip: 'SOZIAL', tone: 'r3mi', life: 9000, ...s }; }
   function real(id)    { return { cat: 'INTERVENTION', chip: INTERVENTIONS[id].code, ...INTERVENTIONS[id] }; }
   /* A genuine code that must be HELD rather than tapped. */
-  function held(id)    { const e = real(id); return { ...e, hold: true,
-                                                     life: (e.life || 7000) + 1500,
-                                                     chip: e.code + ' HALTEN' }; }
+  /* The same fault, wanting sustained contact instead of a tap. Same
+     number, different letter — that letter is the only thing telling
+     the player which it is. */
+  function held(id) {
+    const e = real(id);
+    const code = e.code.replace(/^N-/, 'H-');
+    return { ...e, hold: true, code, chip: code, life: (e.life || 7000) + 1500 };
+  }
   /* Shared, not rebuilt per message: every ERLEDIGT card draws from the
      same pool, so pressing three different closed codes in one run gives
      three different reactions instead of the same one three times. */
@@ -344,9 +361,15 @@ const PPEvents = (() => {
       { speaker: 'V-TGM', text: 'Growth.', sub: 'Fortschritt.' } ],
   ];
 
+  /* Presentation is drawn at random, exactly as it is for every other
+     message. A closed code that always looked grey would be spottable
+     without reading it, and the whole point of the E is that it has to
+     be read. */
+  const CLOSED_TONES = ['quiet', 'info', 'warn', 'crit'];
   function closed(used) {
     const c = pick(CLOSED, used);
-    return { cat: 'CLOSED', chip: c.code + ' ERLEDIGT', tone: 'closed', life: 7000,
+    const tone = CLOSED_TONES[Math.floor(Math.random() * CLOSED_TONES.length)];
+    return { cat: 'CLOSED', chip: c.code, tone, life: 7000,
              id: 'closed', ...c, onAct: CLOSED_ACT, onIgnore: CLOSED_IGNORE };
   }
 
@@ -421,12 +444,12 @@ const PPEvents = (() => {
 
       /* ── RUNDE 2 — the rule, then the first real one ─────────── */
       {
-        id: 2, name: 'WARTUNGSCODES', duration: 62000,
+        id: 2, name: 'ANLAGENCODES', duration: 62000,
         banner: 'SICHERHEITSREGEL WIRD ÜBERTRAGEN.',
         script: [
           { t: 400, say: [
             { speaker: 'SYSTEM', text: 'SICHERHEITSREGEL WIRD ÜBERTRAGEN.' },
-            { speaker: 'SYSTEM', text: 'EIN WARTUNGSCODE — M GEFOLGT VON ZWEI ZIFFERN — BEDEUTET: EINGRIFF ERFORDERLICH.' },
+            { speaker: 'SYSTEM', text: 'EIN ANLAGENCODE DER FORM N GEFOLGT VON ZWEI ZIFFERN BEDEUTET: EINGRIFF ERFORDERLICH.' },
             { speaker: 'SYSTEM', text: 'ALLE ANDEREN MELDUNGEN SIND WÄHREND DER PAUSE NUR INFORMATIV.' },
             { speaker: 'V-TGM', text: 'Finally. Something useful.', sub: 'Endlich. Etwas Brauchbares.' },
             { speaker: 'R-3MI', text: '„Ich schreibe mit.“' },
@@ -449,7 +472,7 @@ const PPEvents = (() => {
         banner: 'REGELERGÄNZUNG WIRD ÜBERTRAGEN.',
         script: [
           { t: 700, say: [
-            { speaker: 'SYSTEM', text: 'REGELERGÄNZUNG: EIN WARTUNGSCODE MIT DEM VERMERK ERLEDIGT IST BEREITS BEARBEITET.' },
+            { speaker: 'SYSTEM', text: 'REGELERGÄNZUNG: EIN CODE MIT DEM BUCHSTABEN E IST BEREITS BEARBEITET.' },
             { speaker: 'SYSTEM', text: 'EIN EINGRIFF IST DANN NICHT ERFORDERLICH.' },
             { speaker: 'R-3MI', text: '„Warum meldet sie ihn dann?“' },
             { speaker: 'V-TGM', text: 'For completeness.', sub: 'Der Vollständigkeit halber.' },
@@ -471,7 +494,7 @@ const PPEvents = (() => {
         banner: 'REGELERGÄNZUNG WIRD ÜBERTRAGEN.',
         script: [
           { t: 500, say: [
-            { speaker: 'SYSTEM', text: 'REGELERGÄNZUNG: EIN WARTUNGSCODE MIT DEM VERMERK HALTEN ERFORDERT DAUERHAFTEN KONTAKT.' },
+            { speaker: 'SYSTEM', text: 'REGELERGÄNZUNG: EIN CODE MIT DEM BUCHSTABEN H ERFORDERT DAUERHAFTEN KONTAKT.' },
             { speaker: 'SYSTEM', text: 'NICHT ANTIPPEN. HALTEN.' },
             { speaker: 'R-3MI', text: '„Wie lange?“' },
             { speaker: 'V-TGM', text: 'Until it stops.', sub: 'Bis es aufhört.' },
@@ -494,7 +517,7 @@ const PPEvents = (() => {
         banner: 'REGELERGÄNZUNG WIRD ÜBERTRAGEN.',
         script: [
           { t: 600,  say: [
-            { speaker: 'SYSTEM', text: 'REGELERGÄNZUNG: EIN WARTUNGSCODE KANN WIDERRUFEN WERDEN.' },
+            { speaker: 'SYSTEM', text: 'REGELERGÄNZUNG: EIN CODE MIT DEM BUCHSTABEN W WIDERRUFT EINEN FRÜHEREN CODE.' },
             { speaker: 'SYSTEM', text: 'NACH EINEM WIDERRUF IST KEIN EINGRIFF MEHR ERFORDERLICH.' },
             { speaker: 'R-3MI', text: '„Sie nimmt ihre eigenen Meldungen zurück?“' },
             { speaker: 'V-TGM', text: 'She is having a day.', sub: 'Sie hat gerade einen Tag.' },
@@ -507,7 +530,7 @@ const PPEvents = (() => {
               action: '[ EINGREIFEN ]',
               life: 11000,
               onAct: [
-                { speaker: 'SYSTEM', text: 'EINGRIFF ERFASST. KEIN WARTUNGSCODE VORHANDEN. UNNÖTIGE ARBEIT ERKANNT.' },
+                { speaker: 'SYSTEM', text: 'EINGRIFF ERFASST. KEIN CODE VORHANDEN. UNNÖTIGE ARBEIT ERKANNT.' },
                 { speaker: 'R-3MI', text: '„ES HAT MICH DARUM GEBETEN!“' },
                 { speaker: 'V-TGM', text: 'It asks for a lot of things.', sub: 'Es bittet um vieles.' },
               ],
@@ -519,7 +542,7 @@ const PPEvents = (() => {
               ],
             }) },
           { t: 14000, ev: real('M02') },
-          { t: 17500, ev: revoke('M-02') },      // taught, then withdrawn
+          { t: 17500, ev: revoke('N-02') },      // taught, then withdrawn
           { t: 26000, ev: info(u.info) },
           { t: 31000, ev: real('M05') },         // and this one is NOT withdrawn
           { t: 40000, ev: fake(u.fake) },
@@ -562,7 +585,7 @@ const PPEvents = (() => {
           { t: 50000, ev: { ...fake(u.fake), tone: 'crit' } },
           { t: 52500, ev: fake(u.fake) },
           { t: 52000, ev: real('M03') },
-          { t: 55500, ev: revoke('M-03') },
+          { t: 55500, ev: revoke('N-03') },
           { t: 57500, ev: info(u.info) },
           { t: 59500, ev: fake(u.fake) },
           { t: 62000, ev: { ...fake(u.fake), tone: 'crit', chip: 'ALARM' } },
@@ -589,13 +612,15 @@ const PPEvents = (() => {
   /* ═══════════════════════════════════════════════════════════════
      FAIRNESS ASSERTION
      The one rule, checked mechanically. If a future joke ever puts
-     "M-" into a message that is not a genuine intervention — or ships
-     an intervention without a code — this says so loudly in the
+     a code pattern into a message that does not carry one — or gives a
+     message the wrong letter for its kind — this says so loudly in the
      console instead of quietly making the game unfair.
      ═══════════════════════════════════════════════════════════════ */
   function verify() {
     const problems = [];
-    const looksLikeCode = s => /\bM-\s?\d/i.test(String(s || ''));
+    // Any of the four letters followed by a digit reads as a code.
+    const looksLikeCode = s => /\b[NHEW]-\s?\d/i.test(String(s || ''));
+    const SHAPE = { INTERVENTION: /^[NH]-\d{2}$/, CLOSED: /^E-\d{2}$/, REVOKE: /^W-\d{2}$/ };
 
     const check = (e, where) => {
       const text = [e.chip, e.head, e.body, e.action].join(' | ');
@@ -603,8 +628,10 @@ const PPEvents = (() => {
       // one that has already been closed, and a withdrawal of one.
       // Everything else must be free of the pattern, or the single rule
       // the whole game rests on stops being decidable.
-      if (e.cat === 'INTERVENTION' || e.cat === 'CLOSED' || e.cat === 'REVOKE') {
-        if (!e.code || !/^M-\d{2}$/.test(e.code)) problems.push(`${where}: ${e.cat} without a well-formed M-code`);
+      if (SHAPE[e.cat]) {
+        if (!e.code || !SHAPE[e.cat].test(e.code)) {
+          problems.push(`${where}: ${e.cat} carries "${e.code}", which is not a ${SHAPE[e.cat]} code`);
+        }
       } else if (looksLikeCode(text)) {
         problems.push(`${where}: non-intervention contains an M-code pattern → "${text}"`);
       }

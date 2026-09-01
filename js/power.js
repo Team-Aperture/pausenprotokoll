@@ -26,15 +26,19 @@ const PPPower = (() => {
 
   let btn = null, deck = null, screen = null;
   let raf = null, startedAt = 0, armed = false, spent = false;
-  let onOff = null;
+  let onOff = null, canPress = null;
 
   function reduced() {
     try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
     catch (_) { return false; }
   }
 
-  function init(offHandler) {
+  /* `guard` says whether the switch is live. Once a run has produced a
+     verdict there is nothing left to switch off — the screen would go
+     dark underneath a results sheet that is still sitting on it. */
+  function init(offHandler, guard) {
     onOff  = offHandler;
+    canPress = guard || null;
     btn    = document.getElementById('deckPower');
     deck   = document.getElementById('deck');
     screen = document.getElementById('deckScreen');
@@ -43,7 +47,13 @@ const PPPower = (() => {
     btn.addEventListener('pointerdown', begin);
     btn.addEventListener('pointerup', cancel);
     btn.addEventListener('pointercancel', cancel);
-    btn.addEventListener('pointerleave', cancel);
+    // Distance rather than boundary: this target is 22px across, and
+    // cancelling the moment a thumb strays outside it would make the
+    // switch practically unusable on a phone.
+    btn.addEventListener('pointermove', (e) => {
+      if (!armed || e.clientX == null) return;
+      if (Math.hypot(e.clientX - ox, e.clientY - oy) > SLOP) cancel();
+    });
     // Keyboard: the same hold, on the same key.
     btn.addEventListener('keydown', e => {
       if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) { e.preventDefault(); begin(e); }
@@ -56,9 +66,15 @@ const PPPower = (() => {
     btn.addEventListener('click', e => e.preventDefault());
   }
 
+  let ox = 0, oy = 0;
+  const SLOP = 44;
+
   function begin(e) {
     if (spent || armed) return;
+    if (canPress && !canPress()) return;
     armed = true;
+    ox = e && e.clientX != null ? e.clientX : 0;
+    oy = e && e.clientY != null ? e.clientY : 0;
     startedAt = performance.now();
     btn.classList.add('holding');
     try { btn.setPointerCapture && e.pointerId != null && btn.setPointerCapture(e.pointerId); } catch (_) {}

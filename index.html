@@ -275,16 +275,16 @@
           <section class="panel rule-card hidden" id="ruleCard">
             <h2 class="panel-label">Sicherheitsregeln</h2>
             <p class="rule-main">
-              <span class="code">M-NN</span> = Eingriff erforderlich.
+              <span class="code">N-NN</span> = Eingriff erforderlich.
             </p>
             <ul class="rule-list">
               <!-- Each rule carries a long form and a short one. A phone
                    gets the short one: four rules that each wrap to two
                    lines cost more vertical room than the messages they
                    are about. -->
-              <li class="rule-extra hidden" id="ruleErledigt"><b>ERLEDIGT</b><span class="rx-long">— kein Eingriff.</span><span class="rx-short">nein</span></li>
-              <li class="rule-extra hidden" id="ruleHalten"><b>HALTEN</b><span class="rx-long">— gedrückt halten.</span><span class="rx-short">halten</span></li>
-              <li class="rule-extra hidden" id="ruleWiderruf"><b>WIDERRUFEN</b><span class="rx-long">— kein Eingriff.</span><span class="rx-short">nein</span></li>
+              <li class="rule-extra hidden" id="ruleErledigt"><b>E-NN</b><span class="rx-long">erledigt — kein Eingriff.</span><span class="rx-short">nein</span></li>
+              <li class="rule-extra hidden" id="ruleHalten"><b>H-NN</b><span class="rx-long">gedrückt halten.</span><span class="rx-short">halten</span></li>
+              <li class="rule-extra hidden" id="ruleWiderruf"><b>W-NN</b><span class="rx-long">widerruft — kein Eingriff.</span><span class="rx-short">nein</span></li>
               <li class="rule-extra hidden" id="ruleSocial"><b>SOZIAL</b><span class="rx-long">— keine Arbeit.</span><span class="rx-short">frei</span></li>
             </ul>
             <p class="rule-note">Alle anderen Meldungen sind nur informativ.</p>
@@ -393,15 +393,16 @@
            Versuchsreihe abgeleitet. Sie sendet währenddessen Meldungen. Die
            meisten davon erfordern nichts.</p>
 
-        <p><b>Die Regel:</b> Eine Meldung mit einem Wartungscode — <b>M</b> gefolgt
-           von zwei Ziffern, etwa <b>M-03</b> — erfordert einen Eingriff. Jede andere
-           Meldung ist während der Pause nur informativ.</p>
+        <p><b>Die Regel:</b> Eine Meldung mit einem Anlagencode — ein Buchstabe,
+           ein Bindestrich, zwei Ziffern — kann einen Eingriff erfordern. Der
+           <b>Buchstabe</b> sagt, welchen. <b>N-03</b> etwa will gedrückt werden.
+           Jede Meldung ohne Code ist während der Pause nur informativ.</p>
 
         <p>Die Anlage ergänzt diese Regel im Verlauf des Versuchs. Neue Regeln
            erscheinen links, sobald sie gelten.</p>
 
         <p>Ein unnötiger Eingriff kostet Pausenstabilität. Ein versäumter
-           Wartungscode ebenfalls. Ein Fehler beendet nichts — die Pause läuft
+           Eingriff ebenfalls. Ein Fehler beendet nichts — die Pause läuft
            weiter, und die Anlage kommentiert.</p>
 
         <p class="sys-text" style="margin-top:var(--sp-md);color:var(--text-dim)">

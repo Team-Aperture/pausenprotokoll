@@ -265,40 +265,6 @@
 /* R-3MI, having finally understood the assignment, stops darting. */
 .face-dart.at-ease .bot-eyes { animation: none; }
 
-/* ─── TOASTS ─────────────────────────────────────────────────── */
-@keyframes toastIn  { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-@keyframes toastOut { from { transform: translateX(0); opacity: 1; }   to { transform: translateX(110%); opacity: 0; } }
-
-.pp-toast {
-  position: fixed;
-  top: calc(var(--sp-lg) + 18px);
-  right: var(--sp-lg);
-  z-index: 300;
-  background: var(--bg-panel);
-  padding: var(--sp-md);
-  max-width: 300px;
-  border: 1px solid var(--bdr-mid);
-  border-left: 3px solid var(--accent-warn);
-  animation: toastIn 0.35s cubic-bezier(0.16,1,0.3,1) forwards;
-}
-.pp-toast.hiding { animation: toastOut 0.35s ease forwards; }
-.toast-label {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.15em;
-  color: var(--accent-warn);
-  margin-bottom: 4px;
-}
-.toast-title {
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--text-primary);
-  margin-bottom: 2px;
-}
-.toast-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.45; }
-
 /* ─── OVERLAY ────────────────────────────────────────────────── */
 .overlay-backdrop {
   position: fixed; inset: 0;
