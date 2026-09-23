@@ -85,7 +85,7 @@ const PPEvents = (() => {
       onAct: [
         { speaker: 'SYSTEM', text: 'ARBEIT ERKANNT.' },
         { speaker: 'R-3MI', text: '„Aber null Komma drei Prozent sind null Komma drei Prozent.“' },
-        { speaker: 'V-TGM', text: 'Remi.', sub: 'Remi.' },
+        { speaker: 'V-TGM', text: 'R-3MI.', sub: 'R-3MI.' },
         { speaker: 'R-3MI', text: '„Schon gut.“' },
       ],
       onIgnore: [
@@ -133,7 +133,7 @@ const PPEvents = (() => {
       ],
       onIgnore: [
         { speaker: 'R-3MI', text: '„Schon gut. Ich sitze einfach weiter hier.“' },
-        { speaker: 'V-TGM', text: 'You are doing great, Remi.', sub: 'Du machst das großartig, Remi.' },
+        { speaker: 'V-TGM', text: 'You are doing great, R-3MI.', sub: 'Du machst das großartig, R-3MI.' },
       ],
     },
     {
@@ -453,7 +453,7 @@ const PPEvents = (() => {
             { speaker: 'SYSTEM', text: 'ALLE ANDEREN MELDUNGEN SIND WÄHREND DER PAUSE NUR INFORMATIV.' },
             { speaker: 'V-TGM', text: 'Finally. Something useful.', sub: 'Endlich. Etwas Brauchbares.' },
             { speaker: 'R-3MI', text: '„Ich schreibe mit.“' },
-            { speaker: 'V-TGM', text: 'It is on the screen, Remi. Permanently.', sub: 'Es steht auf dem Bildschirm, Remi. Dauerhaft.' },
+            { speaker: 'V-TGM', text: 'It is on the screen, R-3MI. Permanently.', sub: 'Es steht auf dem Bildschirm, R-3MI. Dauerhaft.' },
             { speaker: 'R-3MI', text: '„Ich schreibe trotzdem mit.“' },
           ] },
           { t: 500,   do: 'ruleCard' },
@@ -647,7 +647,24 @@ const PPEvents = (() => {
     // The scripted one-offs live inside rounds(); walk them too.
     rounds().forEach(r => (r.script || []).forEach((s, i) => {
       if (s.ev) check(s.ev, `runde ${r.id} script[${i}]`);
+      if (s.ev) ['onAct', 'onIgnore', 'onMiss'].forEach(k => speech(s.ev[k], `runde ${r.id} script[${i}].${k}`));
+      if (s.say) speech(s.say, `runde ${r.id} script[${i}]`);
     }));
+
+    // And everything anybody says. The units are R-3MI and V-TGM and
+    // address each other by designation only — never by a nickname.
+    function speech(spec, where) {
+      const flat = [].concat(...(spec || []).map(x => Array.isArray(x) ? x : [x]));
+      flat.forEach(l => {
+        const t = `${l.text || ''} ${l.sub || ''}`;
+        if (/\b(remi|amanda)\b/i.test(t)) problems.push(`${where}: Anrede ohne Bezeichnung → "${t}"`);
+      });
+    }
+    const allEvents = [...DISTRACTION, ...SOCIAL, ...CLOSED,
+                       ...Object.keys(INTERVENTIONS).map(k => INTERVENTIONS[k])];
+    allEvents.forEach((e, i) => ['onAct', 'onIgnore', 'onMiss'].forEach(k => speech(e[k], `event[${i}].${k}`)));
+    speech(CLOSED_ACT, 'CLOSED_ACT'); speech(CLOSED_IGNORE, 'CLOSED_IGNORE');
+    speech(revoke('N-00').onIgnore, 'REVOKE');
 
     if (problems.length) console.error('[PAUSENPROTOKOLL] Fairness-Regel verletzt:\n' + problems.join('\n'));
     return problems;

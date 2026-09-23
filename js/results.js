@@ -216,7 +216,7 @@ const PPResults = (() => {
         { speaker: 'R-3MI', text: '„Du hast ihn ausgeschaltet.“' },
         { speaker: 'V-TGM', text: 'I did.', sub: 'Habe ich.' },
         { speaker: 'R-3MI', text: '„Das durfte man?“' },
-        { speaker: 'V-TGM', text: 'It is a break, Remi. Nobody has to reach us.', sub: 'Es ist eine Pause, Remi. Niemand muss uns erreichen.' },
+        { speaker: 'V-TGM', text: 'It is a break, R-3MI. Nobody has to reach us.', sub: 'Es ist eine Pause, R-3MI. Niemand muss uns erreichen.' },
         // A pause, not a quotation. R-3MI has stopped talking.
         { speaker: 'R-3MI', text: '…' },
         { speaker: 'R-3MI', text: '„Ich sitze einfach mal hier.“' },

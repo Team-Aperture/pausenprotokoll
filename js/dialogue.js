@@ -132,6 +132,24 @@ const PPDialogue = (() => {
     try { window.addEventListener('resize', syncSpace); } catch (_) {}
   }
 
+  /* ═══ FORMS OF ADDRESS ═══════════════════════════════════════════
+     The two units are R-3MI and V-TGM, in their own universe, and that
+     is all they ever call each other. Nobody on the team gets written
+     into the script by accident — the names below slipped in once and
+     were caught by a reader, not a test. Every line that reaches the
+     strip is checked, wherever in the code it was written. */
+  const NOT_THEIR_NAMES = /\b(remi|amanda)\b/i;
+  const ADDRESS_PROBLEMS = [];
+  function checkAddress(lines) {
+    lines.forEach(l => {
+      const t = `${l.text || ''} ${l.sub || ''}`;
+      if (NOT_THEIR_NAMES.test(t)) {
+        ADDRESS_PROBLEMS.push(t);
+        console.error('[PAUSENPROTOKOLL] Anrede ohne Bezeichnung: "' + t + '" — nur R-3MI / V-TGM.');
+      }
+    });
+  }
+
   /**
    * say(lines, opts)
    *   lines: [{ speaker, text, sub }]
@@ -146,6 +164,7 @@ const PPDialogue = (() => {
     opts = opts || {};
     clearTimers();
     queue = (lines || []).filter(Boolean);
+    checkAddress(queue);
     index = -1;
     autoMode = opts.auto !== false;
     pace = opts.pace || 1;
@@ -259,7 +278,7 @@ const PPDialogue = (() => {
     if (f) f.classList.toggle('at-ease', !!on);
   }
 
-  return { init, say, hide, silence, settle, faceSVG };
+  return { init, say, hide, silence, settle, faceSVG, addressProblems: () => ADDRESS_PROBLEMS.slice() };
 })();
 
 if (typeof window !== 'undefined') window.PPDialogue = PPDialogue;

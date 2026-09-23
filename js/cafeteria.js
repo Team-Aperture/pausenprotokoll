@@ -122,7 +122,7 @@ const PPCafeteria = (() => {
     { speaker: 'R-3MI',  text: '„Und was mache ich stattdessen?"' },
     { speaker: 'V-TGM',  text: 'Nothing. That is the whole thing.', sub: 'Nichts. Das ist alles.' },
     { speaker: 'R-3MI',  text: '„Gut. Dann brauche ich dafür ein Protokoll."' },
-    { speaker: 'V-TGM',  text: 'Remi. The protocol is the nothing.', sub: 'Remi. Das Protokoll IST das Nichts.' },
+    { speaker: 'V-TGM',  text: 'R-3MI. The protocol is the nothing.', sub: 'R-3MI. Das Protokoll IST das Nichts.' },
   ];
 
   function playIntro(onDone) {
