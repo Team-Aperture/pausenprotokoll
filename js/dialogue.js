@@ -61,6 +61,38 @@ const PPDialogue = (() => {
       style="--bot-color: var(${s.colorVar})">${BODY[s.face]}</svg>`;
   }
 
+  /* The same two units, whole, sitting at the desk in front of the
+     monitor and standing by the terminal in the cafeteria. Same line
+     work as the portraits, filled dark so they read as solid bodies
+     against the warm room. R-3MI's eye is off-centre on purpose: he is
+     looking at the screen. V-TGM is looking at R-3MI. */
+  const CREW = {
+    'R-3MI':
+        '<line class="bot-antenna crew-antenna" x1="52" y1="27" x2="55" y2="12"/>'
+      + '<circle class="bot-antenna-tip crew-antenna" cx="55.5" cy="9.5" r="3"/>'
+      + '<path class="bot-frame crew-torso" d="M22 96 Q22 81 37 81 H71 Q86 81 86 96 L92 152 H16 Z"/>'
+      + '<circle class="crew-light" cx="54" cy="106" r="4"/>'
+      + '<path class="crew-arm" d="M82 94 Q101 112 104 140"/>'
+      + '<rect class="crew-neck" x="47" y="72" width="14" height="10" rx="2"/>'
+      + '<rect class="bot-frame" x="27" y="27" width="54" height="47" rx="15"/>'
+      + '<g class="bot-eyes"><circle class="bot-eye" cx="63" cy="46" r="8.5"/></g>'
+      + '<rect class="bot-mouth" x="44" y="62" width="18" height="3" rx="1.5"/>',
+    'V-TGM':
+        '<path class="bot-frame crew-torso" d="M46 114 Q46 100 61 100 H91 Q106 100 106 114 L112 152 H40 Z"/>'
+      + '<circle class="crew-light" cx="76" cy="124" r="4"/>'
+      + '<rect class="crew-neck" x="69" y="88" width="14" height="13" rx="2"/>'
+      + '<rect class="bot-tube" x="103" y="24" width="10" height="28" rx="4"/>'
+      + '<circle class="bot-frame" cx="76" cy="58" r="32"/>'
+      + '<g class="bot-eyes"><circle class="bot-eye" cx="64" cy="54" r="11"/></g>'
+      + '<rect class="bot-mouth" x="62" y="77" width="22" height="3" rx="1.5"/>',
+  };
+  function crewSVG(unit) {
+    const s = SPEAKERS[unit];
+    if (!s || !CREW[unit]) return '';
+    return `<svg class="crew-svg ${s.idle}" viewBox="0 0 150 152" preserveAspectRatio="xMidYMax meet"
+      aria-hidden="true" focusable="false" style="--bot-color: var(${s.colorVar})">${CREW[unit]}</svg>`;
+  }
+
   let el = {}, queue = [], index = -1;
   let typing = false, typeTimer = null, autoTimer = null;
   let onComplete = null, autoMode = true;
@@ -80,6 +112,9 @@ const PPDialogue = (() => {
     el.text      = document.getElementById('dlgText');
     el.sub       = document.getElementById('dlgSub');
     el.next      = document.getElementById('dlgNext');
+
+    // Whoever is drawn in the room is drawn from the same source.
+    document.querySelectorAll('[data-crew]').forEach(n => { n.innerHTML = crewSVG(n.dataset.crew); });
 
     el.next.addEventListener('click', () => { advance(); });
 
@@ -120,7 +155,11 @@ const PPDialogue = (() => {
         const s = screen ? screen.getBoundingClientRect() : { bottom: window.innerHeight };
         overlap = Math.max(0, Math.ceil(s.bottom - restingTop));
       }
+      const was = document.documentElement.style.getPropertyValue('--dlg-h');
       document.documentElement.style.setProperty('--dlg-h', overlap + 'px');
+      // Tell the game the moment the room under the messages changes, so
+      // it can re-fit the pile now rather than at its next periodic check.
+      if (was !== overlap + 'px') window.dispatchEvent(new Event('pp:space'));
     } catch (_) {}
   }
   function watchSize() {
@@ -205,11 +244,15 @@ const PPDialogue = (() => {
 
     el.container.classList.add('visible');
     el.portrait.classList.add('speaking');
+    // The units at the desk light up when it is their line.
+    document.body.dataset.speaker = line.speaker;
+    document.body.classList.add('typing');
     syncSpace();
     try { PPMusic.duck(true); } catch (_) {}
 
     typeText(line.text || '', line.speaker, () => {
       el.portrait.classList.remove('speaking');
+      document.body.classList.remove('typing');
       syncSpace();
       if (autoMode) {
         // Long enough to read, short enough that the facility does not
@@ -250,6 +293,7 @@ const PPDialogue = (() => {
     typing = false;
     el.text.textContent = queue[index] ? (queue[index].text || '') : '';
     el.portrait.classList.remove('speaking');
+    document.body.classList.remove('typing');
     syncSpace();
     if (autoMode) {
       autoTimer = setTimeout(() => { autoTimer = null; advance(); }, 1800);
@@ -260,6 +304,8 @@ const PPDialogue = (() => {
     clearTimers();
     el.container?.classList.remove('visible');
     el.portrait?.classList.remove('speaking');
+    delete document.body.dataset.speaker;
+    document.body.classList.remove('typing');
     syncSpace();
     try { PPMusic.duck(false); } catch (_) {}
   }
@@ -278,7 +324,12 @@ const PPDialogue = (() => {
     if (f) f.classList.toggle('at-ease', !!on);
   }
 
-  return { init, say, hide, silence, settle, faceSVG, addressProblems: () => ADDRESS_PROBLEMS.slice() };
+  /* Something is being said right now. The streak remarks wait for this
+     to be false rather than talk over a line already in progress. */
+  function isBusy() { return !!(el.container && el.container.classList.contains('visible')); }
+
+  return { init, say, hide, silence, settle, faceSVG, crewSVG, isBusy,
+           addressProblems: () => ADDRESS_PROBLEMS.slice() };
 })();
 
 if (typeof window !== 'undefined') window.PPDialogue = PPDialogue;

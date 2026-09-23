@@ -60,6 +60,23 @@ Dass die beiden draußen stehen, hat sie nebenbei über *jede* Vollbildebene
 gehoben, die das Spiel zeichnet — deshalb verschwinden sie nicht mehr hinter
 der 10-Sekunden-Prüfung, der Auswertung und dem Abspann.
 
+Man sieht sie auch. Im Menü stehen beide neben dem Terminal und warten auf
+eine Pause, von der ihnen noch niemand erklärt hat, wie sie geht. Am Tisch
+sitzen sie links und rechts neben der Dialogleiste — R-3MI mit seiner Tasse,
+V-TGM schwebend und vollkommen ruhig —, sobald das Fenster Platz für einen
+Tisch lässt (ab 1280 × 860). Beide sind in derselben Linienführung gezeichnet
+wie ihre Porträts, und zwar aus **einer** Quelle (`PPDialogue.crewSVG`). Wer
+spricht, leuchtet auf; solange die Zeile noch getippt wird, bewegt sich der
+Mund. R-3MI zappelt, bis er die Abschlusskalibrierung bestanden hat; dann
+nicht mehr. Bei einem Fehler zuckt er zusammen und V-TGM kneift das Auge
+zusammen.
+
+Die Tasse neben R-3MI ist die aus `N-03` und `N-07`: Wird ein Kaffee-Code
+verpasst, kippt sie um und hinterlässt einen Fleck; ein paar Sekunden später
+hat jemand eine neue geholt. Wird er gesichert, wackelt sie und bleibt stehen.
+Alles davon ist Kulisse — kein Klickziel, nicht fokussierbar, und was es
+zeigt, steht ohnehin auf der Karte.
+
 Das ist der ganze Witz in Farbe: Man sitzt in einer gemütlichen Kantine und
 starrt auf ein Gerät, das die Gemütlichkeit für einen Messvorgang hält.
 
@@ -98,6 +115,17 @@ würde der Oberfläche weiterhin 1440 px zusprechen, während sie tatsächlich
 | **B** | LEICHT ARBEITSSÜCHTIG | Freigabeschwelle |
 | **C** | PAUSE NICHT VERSTANDEN | keine Zieldaten |
 | **D** | R-3MI | keine Zieldaten |
+
+Die Auswertung zählt ihre Zahlen hoch und stempelt dann den Rang aufs Blatt.
+Hochgezählt wird nur eine für Screenreader verborgene Kopie; der echte Wert
+steht von Anfang an daneben, und wer reduzierte Bewegung eingestellt hat,
+bekommt die Zahlen und den Stempel sofort. Die einzige
+Schaltfläche, **[ WEITER ]**, ist ab dem ersten Bild da und bedienbar. Auf
+einem breiten Monitor legt sich das Blatt in zwei Spalten, damit Bewertung
+und Schaltfläche gleichzeitig zu sehen sind.
+
+Neu auf dem Blatt: die **längste Ruheserie** und die **schnellste Reaktion**
+auf einen echten Code.
 
 Es gibt genau **ein** S, und das bekommt man nicht durchs Spielen. Unterhalb
 von **B** gilt die Pause als nicht bestanden und die Anlage rückt die
@@ -188,9 +216,12 @@ Erkenntnis ist der halbe Spaß.
 
 Damit das kein Ratespiel wird, ist die Regel **strukturell erzwungen** und nicht
 von Hand gepflegt: `PPEvents.verify()` in `js/events.js` läuft bei jedem Start
-und prüft, dass keine Nicht-Intervention irgendwo das Muster `M-<Ziffer>`
-enthält und dass jede Intervention einen wohlgeformten Code trägt. Ein neuer
-Witz, der die Regel bricht, meldet sich sofort in der Konsole.
+und prüft, dass keine Meldung ohne Code irgendwo das Muster
+`<N|H|E|W>-<Ziffer>` enthält und dass jede Meldung mit Code den richtigen
+Buchstaben für ihre Art trägt. Meldungen, deren Text sich live ändert (siehe
+unten), werden dabei über ihre **ganze** Laufzeit abgetastet — ein Countdown
+kann also nie zufällig einen Code buchstabieren. Ein neuer Witz, der die Regel
+bricht, meldet sich sofort in der Konsole.
 
 ### Die Codefamilie
 
@@ -240,11 +271,67 @@ danach in der Regelkarte.
 Ein Fehler beendet nichts. Er kostet Stabilität, erzeugt die besseren Dialoge
 und der Versuch läuft weiter. Jeder Durchlauf erreicht das Ende.
 
+### Die Ruheserie
+
+Neben der Pausenstabilität steht die **Ruheserie**: jede richtige Entscheidung
+in Folge. Das ist ein echter Code, der bearbeitet wurde — aber genauso eine
+Fehlmeldung, ein erledigter oder ein widerrufener Code, den man **in Ruhe
+gelassen** hat. Das Spiel belohnt damit ausdrücklich das, worum es geht:
+anhaltendes, bewusstes Nichtstun.
+
+* Jede fünfte richtige Entscheidung in Folge gibt **+1 %** Stabilität zurück
+  (`RUHEBONUS`). Wer einen Fehler gemacht hat, kann sich also zurückarbeiten —
+  indem er nichts tut.
+* Ein Fehler beendet die Serie. Die Anzeige sagt das in **Worten**
+  (`VERLOREN`), nicht nur in Rot.
+* Bei 5, 10, 15, 20, 30 und 40 bemerken es R-3MI und V-TGM — aber nur, wenn
+  gerade niemand spricht. Die Bemerkung wartet ein paar Sekunden auf eine
+  ruhige Stelle und verfällt dann; ein Lob für eine Serie, die inzwischen
+  gerissen ist, wäre schlimmer als keins.
+* Meldungen, die vom Bildschirm verdrängt werden, weil kein Platz mehr ist,
+  zählen mit. Sonst wäre eine Serie auf dem Telefon kürzer als am Rechner.
+
+Ein fehlerfreier Durchlauf trifft **45** Entscheidungen. Die Auszeichnung
+**UNERSCHÜTTERLICH** verlangt 25 davon am Stück.
+
+### Reaktionszeit
+
+Ein echter Code, der bearbeitet wurde, schreibt dazu, wie lange man gebraucht
+hat (`INTERVENTION KORREKT · 1,4 S`), und `KNAPP`, wenn weniger als anderthalb
+Sekunden übrig waren. Bei einem `H-NN` zählt der **Beginn** des Haltens, nicht
+sein Ende — die 800 ms Halten sind keine Bedenkzeit.
+
+### Meldungen, die nicht stillhalten
+
+Ein paar Meldungen ändern ihren Text, während sie auf dem Bildschirm stehen:
+
+| Meldung | Was sich bewegt |
+|---|---|
+| SELBSTZERSTÖRUNG EINGELEITET | zählt auf null herunter. Dann passiert nichts. (Runde 4) |
+| PAUSE ENDET GLEICH | zählt herunter, mit **[ PAUSE VERLÄNGERN ]**. Die Pause endet nicht. (Runde 6) |
+| AKTUALISIERUNG LÄUFT | rast auf 99 % und bleibt dort |
+| AKTIVITÄTSDEFIZIT ERKANNT | zählt, wie lange **der Spieler** tatsächlich nichts angefasst hat |
+| PAUSENZEIT VERSTREICHT | zählt die bisherige Pause mit |
+
+Die Zahl bewegt sich, der Chip nicht — und nur der Chip zählt. Das ist das
+Spiel in seiner reinsten Form.
+
 ### Ablauf
 
 Kantine → Intro → Anflug → sieben Runden (Eingewöhnung, Grundrauschen, Anlagencodes,
 Abgeschlossene Vorgänge, Dauerkontakt, Zielkonflikt, Pausenstress) →
 Abschlusskalibrierung → Auswertung → Abspann.
+
+Jede Runde beginnt mit einem Titelband quer über den Bildschirm — Nummer,
+Name, und in den Runden 3 bis 5 die neue Regel. Es nimmt keine Klicks an
+(`pointer-events: none`), ist nach knapp zwei Sekunden wieder weg und damit
+längst verschwunden, bevor die erste Meldung einer Runde etwas verlangt.
+
+Wenn eine Entscheidung fällt, reagiert die Scheibe: ein grüner Schimmer am
+Rand für einen echten Code, ein roter mit einem Störstreifen für unnötige
+Arbeit, ein warmer Schweif für einen Ruhebonus. Das ist Betonung, keine
+Information — alles davon steht auch auf der Karte —, und bei reduzierter
+Bewegung entfällt es ganz.
 
 Die Abschlusskalibrierung ist **zehn Sekunden nichts tun.** Nach drei Sekunden
 erscheint eine Schaltfläche, nach fünf ändert sie ihre Beschriftung, nach sieben
@@ -306,6 +393,13 @@ Auch die Schaltfläche der Abschlusskalibrierung hat eine **feste** Breite, nich
 nur eine Mindestbreite — ihre Beschriftung ändert sich, während der Spieler sie
 anstarrt.
 
+Dasselbe gilt für alles, was sich jetzt bewegt: Die Stabilitätszahl zuckt,
+die Ruheserie springt, die Figuren am Tisch zappeln, der Rang wird gestempelt,
+die Scheibe leuchtet auf — und nichts davon ist ein Klickziel oder enthält
+eins. Das Leuchten auf der Scheibe ist eine eigene Ebene über der Oberfläche;
+`.deck-screen` selbst wird nie animiert, weil sein `transform` alles
+zusammenhält, was im Monitor bleiben soll.
+
 Ein zweiter Fallstrick derselben Familie: Eine laufende CSS-Animation schlägt im
 Kaskadenrang eine normale Deklaration. Der pulsierende Köder verschluckte damit
 den Tastaturfokusring — ausgerechnet auf den Schaltflächen, bei denen das Spiel
@@ -335,9 +429,29 @@ des Spiels:
   ist das, was das Kürzen schützt. Und die Reihenfolge wird nie zugunsten
   echter Codes umsortiert: Position darf nichts verraten.
 
-Gemessen über volle Sitzungen auf 360×640, 360×740, 414×896, 768×1024,
-1024×768, 1280×720, 1366×768, 1440×900, 1600×900 und 1920×1080: **keine
-einzige Schaltfläche unter dem Falz.**
+* Neu gemessen wird nicht nur im Takt, sondern **sofort**, wenn sich der
+  Platz ändert: wenn die Dialogleiste hochfährt oder verschwindet
+  (`pp:space`) und wenn die Regelkarte eine Zeile dazubekommt. Vorher lag
+  zwischen einer solchen Änderung und der nächsten Prüfung bis zu eine
+  Viertelsekunde, in der eine Schaltfläche unter der Leiste stehen konnte.
+* Die Zeilen des Spielrasters sind so hoch wie ihr Inhalt
+  (`align-content: start`). Vorher verteilte das Raster die Resthöhe auf
+  seine Zeilen, und in den einspaltigen Layouts stand unter der Statusleiste
+  ein leeres Band — Platz, den die Meldungen brauchten.
+
+Gemessen über volle Sitzungen auf 360×640, 360×740, 390×844, 412×915,
+640×360, 740×360, 768×1024, 1024×768, 1280×720, 1366×768, 1440×900 und
+1920×1080: **keine einzige Schaltfläche unter dem Falz.** Auf 390×844 und
+360×640 zusätzlich mit vierfacher Abtastrate.
+
+**Telefon quer** (640×360) hat einen eigenen Aufbau. Der Monitor ist dort
+keine 350px hoch, und die gewöhnliche Telefonleiste ließ nach dem Hochfahren
+der Dialogleiste keinen Platz für auch nur eine Meldung mit Schaltfläche.
+Unterhalb von 420px Bildschirmhöhe fällt alles, woran der Spieler gemessen
+wird, auf zwei dünne Zeilen zusammen: Stabilität, Serie und Uhr in der
+einen, die Regeln in der anderen. Weichen muss nur Beiwerk —
+Panel-Überschriften, der Kopf der Meldungsspalte, das Banner —; jede Regel
+und jede Zahl bleibt. Die Dialogleiste wird dort ebenfalls flacher.
 
 Auf kurzen Fenstern weicht dafür der Raum: Unter 820px Höhe schrumpfen
 Sitzabstand und Tischband, damit der Monitor genug Platz behält — Spiel vor
@@ -374,6 +488,9 @@ Prozedurales Web Audio, keine Dateien. Ein globaler Schalter, der gemerkt wird.
 gesicherte Tasse, ein stabilisierter Stuhl, eine eingeblendete Regeltafel. Eine
 Schaltfläche, die nur den Bildschirm ändert, bekommt ein gewöhnliches Klicken.
 
+Der Stempel auf der Auswertung ist bewusst **kein** KLONK, sondern ein
+dumpfer, kurzer Schlag ohne Nachklang: Papier, nicht Anlage.
+
 Echte Eingriffe klingen anders als Fehlmeldungen (ein steigender Zweiklang
 gegen einen flachen Piepser). Das ist eine Zugabe, keine Voraussetzung — der
 Code steht auf der Karte.
@@ -404,9 +521,9 @@ js/
   boot.js         das BIOS — läuft im Monitor und in voller Größe
   cafeteria.js    Kamerafahrt und Anflug
   state.js        Einstellungen, kleiner Wiederaufnahmepunkt, Auszeichnungen
-  dialogue.js     R-3MI / V-TGM / SYSTEM, animierte Gesichter, Untertitel
+  dialogue.js     R-3MI / V-TGM / SYSTEM, Gesichter, Figuren im Raum, Untertitel
   events.js       Meldungsdaten, Rundenskripte, Fairness-Prüfung
-  game.js         Rundenlauf, Bewertung, die zehn Sekunden
+  game.js         Rundenlauf, Bewertung, Ruheserie, die zehn Sekunden
   power.js        der Netzschalter am Monitor
   results.js      Auswertung, Rang, Auszeichnungen, Abspann, Zieldaten
   app.js          Menü und Verdrahtung
@@ -427,6 +544,13 @@ erkannt, gemeldet und spielt normal weiter.
 **R-3MI** spricht Deutsch, findet Pausen theoretisch gut und ist praktisch
 außerstande, eine zu machen. **V-TGM** spricht Englisch mit deutschem
 Untertitel, wartet deutlich besser ab und kommentiert trocken.
+
+Die beiden sprechen sich **ausschließlich mit ihrer Bezeichnung** an — R-3MI
+und V-TGM, eigenes Universum, eigene Namen. Das ist nicht nur eine
+Schreibregel, sondern wird geprüft: `PPEvents.verify()` geht jede Dialogzeile
+der Ereignisdaten durch, und `PPDialogue.say()` prüft jede Zeile, die
+tatsächlich gesprochen wird, egal aus welcher Datei sie stammt. Ein
+Spitzname meldet sich in der Konsole.
 
 Keine Gäste. Keine Sprachaufnahmen. Keine Enthüllungen. Die Anlage hat aus
 irgendeinem Grund entschieden, dass auch Pausen kalibriert werden müssen — mehr

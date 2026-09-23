@@ -47,6 +47,10 @@
   .rail > .panel { flex: 1 1 220px; padding: 6px var(--sp-md) 8px; }
   .rail > .rule-card { flex: 1 1 100%; order: 3; }
   .stab-value { font-size: 30px; }
+  /* Label and count side by side: stacked, they stood 2px taller than
+     the percentage and the whole strip grew by it. */
+  .streak { flex-direction: row; align-items: baseline; gap: 5px; }
+  .streak-n { font-size: 20px; }
   .stab-track { margin-top: 4px; height: 7px; }
   .rail-rows { grid-template-columns: 1fr; gap: 2px; }
   .rail-rows dd { text-align: left; }
@@ -80,6 +84,8 @@
   .rail > .rule-card  { flex: 1 1 100%; order: 3; }
   .rail > .panel { padding: 6px var(--sp-md) 8px; }
   .stab-value { font-size: 26px; }
+  .streak { flex-direction: row; align-items: baseline; gap: 5px; }
+  .streak-n { font-size: 18px; }
   .stab-track { margin-top: 4px; height: 7px; }
   .rail-rows { grid-template-columns: 1fr; gap: 2px; }
   .rail-rows dd { text-align: left; }
@@ -124,8 +130,16 @@
   .panel-label { font-size: 9px; letter-spacing: 0.18em; margin-bottom: 3px; }
   .rail > .panel { padding: 6px var(--sp-md) 8px; }
   .stab-value { font-size: 24px; }
+  /* One line on a phone: label and count side by side, no taller than
+     the percentage next to them. */
+  .streak { flex-direction: row; align-items: baseline; gap: 4px; }
+  .streak-label { font-size: 7.5px; letter-spacing: 0.1em; }
+  .streak-n { font-size: 16px; }
   .stab-track { margin-top: 4px; height: 7px; }
-  .stab-delta { font-size: 11px; margin-top: 3px; min-height: 1.1em; }
+  .stab-delta { font-size: 11px; margin-top: 3px; min-height: 1.1em; white-space: nowrap; overflow: hidden; }
+
+  .rc-num { font-size: 10px; letter-spacing: 0.3em; }
+  .rc-tag { font-size: 9.5px; letter-spacing: 0.14em; }
 
   /* On the strip the round label is context, the clock is the number. */
   .rail-rows { grid-template-columns: 1fr; gap: 2px; }
@@ -192,7 +206,7 @@
 
   .overlay-card { padding: var(--sp-md); max-height: 88%; }
   .res-stab { font-size: 48px; }
-  .res-rank-letter { font-size: 56px; }
+  .res-rank-letter { font-size: 56px; padding: 2px 12px 0; }
   .final-stage { gap: var(--sp-md); }
 }
 
@@ -202,6 +216,58 @@
   .evt-head { font-size: 14px; }
   .stab-value { font-size: 26px; }
   .rail-rows dd.mono-lg { font-size: 15px; }
+}
+
+/* ─── A VERY SHORT SCREEN: THE LANDSCAPE PHONE ──────────────────
+   At 640×360 the monitor is under 350px tall, and the ordinary phone
+   strip (two stacked panels, the rule card, the feed header) left no
+   room for a single message with its button once the dialogue strip
+   came up. Here everything the player is scored on collapses to two
+   thin lines: stability, streak and clock on one; the rules on the
+   other. The flavour — panel titles, the feed header, the banner —
+   gives way; every rule and every number stays. */
+@container screen (max-height: 420px) {
+  .sys-bar { padding-top: 2px; padding-bottom: 2px; }
+  .sys-bar-actions .ka-btn.small { min-height: 30px; padding: 4px 8px; }
+  .game-shell { padding-top: calc(var(--sp-xs) + 36px); gap: 6px; }
+
+  .rail { gap: 5px; }
+  .rail > .panel { padding: 4px 10px 5px; }
+  .rail > .panel-stab { flex: 1 1 60%; }
+  .rail > .panel-run  { flex: 1 1 28%; }
+  .panel-stab .panel-label,
+  .panel-run .panel-label,
+  .rule-card .panel-label { display: none; }
+
+  .stab-head  { display: flex; align-items: center; gap: 10px; }
+  .stab-row   { flex: 0 0 auto; gap: 8px; }
+  .stab-value { font-size: 22px; }
+  .stab-value .unit { font-size: 13px; }
+  .streak { flex-direction: row; align-items: baseline; gap: 4px; }
+  .streak-label { font-size: 7.5px; letter-spacing: 0.1em; }
+  .streak-n { font-size: 15px; }
+  .stab-track { flex: 1 1 auto; min-width: 40px; margin-top: 0; height: 6px; }
+  .stab-delta { flex: 0 1 auto; max-width: 34%; margin-top: 0; min-height: 0; font-size: 10px; }
+
+  .rail-rows { display: flex; align-items: baseline; gap: 8px; }
+  .rail-rows dt { display: none; }
+  .rail-rows dd.mono-lg { font-size: 16px; line-height: 1.1; }
+
+  .rule-card { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; }
+  .rule-main { font-size: 11px; line-height: 1.3; }
+  .rule-list { margin: 0; grid-template-columns: repeat(4, auto); gap: 2px 10px; }
+  .rule-note { display: none; }
+
+  .feed-head { display: none; }
+  .feed { min-height: 0; gap: 5px; }
+  .evt { padding: 6px 10px; gap: 4px; }
+  .evt-head { font-size: 14px; }
+  .evt.tone-crit .evt-head { font-size: 15px; }
+  .feed .evt .evt-body { -webkit-line-clamp: 1; font-size: 11px; line-height: 1.4; }
+  .evt-action { min-height: 44px; padding: 10px var(--sp-md); }
+
+  .rc-band { padding: 8px var(--sp-md); gap: 3px; }
+  .rc-name { font-size: 22px; }
 }
 
 /* Height, not width: an inline-size container cannot answer this one,
@@ -255,6 +321,19 @@
   .dlg-container { padding: var(--sp-sm); padding-bottom: calc(var(--sp-sm) + env(safe-area-inset-bottom, 0px)); }
 }
 
+/* A landscape phone: the strip lies over the bottom of a monitor that
+   is barely 350px tall, so it gives back every pixel it can. */
+@media (max-height: 440px) {
+  .dlg-box { grid-template-columns: 52px 1fr; }
+  .dlg-portrait { width: 52px; height: 62px; }
+  .bot-face { width: 44px; height: 50px; }
+  .dlg-body { padding: 5px 12px; gap: 2px; }
+  .dlg-speaker { font-size: 9.5px; }
+  .dlg-text { font-size: 13px; line-height: 1.35; min-height: 0; }
+  .dlg-sub { font-size: 10px; }
+  .dlg-container { padding: 4px var(--sp-sm); padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px)); }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    REDUCED MOTION
    The facility keeps its opinions; it just stops moving while it has
@@ -272,6 +351,10 @@
   /* Elements whose entrance animation ends in the visible state must
      not be left mid-way by the override above. */
   .evt, .final-bait, .final-stage, .results, .title-card, .pp-toast { opacity: 1 !important; transform: none !important; }
+  /* Feedback on the glass is pure emphasis; with motion off it simply
+     does not happen. Everything it emphasises is written on the card. */
+  .screen-fx { display: none !important; }
+  .res-rank-letter { opacity: 1 !important; transform: rotate(-5deg) !important; }
   .boot-line.visible { opacity: 1 !important; transform: none !important; }
 
   /* A bait button still has to look like bait. */

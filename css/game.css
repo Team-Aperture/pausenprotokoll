@@ -17,6 +17,12 @@
   grid-template-columns: 280px 1fr;
   gap: var(--sp-lg);
   align-items: start;
+  /* Rows take the height of what is in them. Left at the default, the
+     grid shares out the shell's spare height between its rows, and in
+     the one-column layouts that parked an empty band under the status
+     strip — room the messages needed, on exactly the screens that have
+     least of it. */
+  align-content: start;
   /* The shell fills the SCREEN, not the browser window — it sits inside
      the monitor now, and 100vh would overflow the bezel. */
   min-height: 100%;
@@ -57,6 +63,65 @@
 .stab-value.mid  { color: var(--accent-warn); }
 .stab-value.low  { color: var(--text-error); }
 
+/* The number reacts to what just happened to it. A readout, not a
+   control — it is allowed to move. */
+.stab-value { transform-origin: left bottom; }
+.stab-value.bump-down { animation: stabDown .46s ease; }
+.stab-value.bump-up   { animation: stabUp .5s ease; }
+@keyframes stabDown {
+  0%   { transform: none; }
+  18%  { transform: translateX(-4px); text-shadow: 0 0 18px rgba(200,68,68,.7); }
+  38%  { transform: translateX(4px); }
+  58%  { transform: translateX(-2px); }
+  100% { transform: none; text-shadow: none; }
+}
+@keyframes stabUp {
+  0%   { transform: none; }
+  35%  { transform: translateY(-3px) scale(1.04); text-shadow: 0 0 18px rgba(46,207,98,.6); }
+  100% { transform: none; text-shadow: none; }
+}
+
+/* ─── The calm streak ────────────────────────────────────────────
+   Beside the number rather than under it, so the rail never grows a
+   line for it. It says what it is in words ("RUHESERIE", and
+   "VERLOREN" when it breaks); the glow is only emphasis. */
+.stab-row { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-sm); }
+.streak {
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 3px;
+  line-height: 1;
+  padding-bottom: 1px;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+.streak-label { font-size: 9px; letter-spacing: 0.18em; color: var(--text-secondary); }
+.streak-n {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 26px; font-weight: 700;
+  color: var(--text-primary);
+  transform-origin: right bottom;
+  transition: color var(--t-mid), text-shadow var(--t-mid);
+}
+.streak-n::before { content: '×'; font-size: .62em; color: var(--text-secondary); margin-right: 2px; }
+.streak.hot .streak-n { color: var(--accent-warn); text-shadow: 0 0 14px rgba(200,138,40,.45); }
+.streak.up .streak-n        { animation: streakUp .32s ease; }
+.streak.milestone .streak-n { animation: streakMile .9s cubic-bezier(.2,1.3,.4,1); }
+.streak.lost .streak-label,
+.streak.lost .streak-n      { color: var(--text-error); }
+.streak.lost .streak-n      { animation: streakLost .5s ease; }
+@keyframes streakUp   { from { transform: translateY(4px); opacity: .4; } to { transform: none; opacity: 1; } }
+@keyframes streakMile {
+  0%   { transform: none; }
+  30%  { transform: scale(1.45); color: var(--accent-warn); text-shadow: 0 0 22px rgba(200,138,40,.9); }
+  100% { transform: none; }
+}
+@keyframes streakLost {
+  0%, 100% { transform: none; }
+  20% { transform: translateX(-3px); } 40% { transform: translateX(3px); }
+  60% { transform: translateX(-2px); } 80% { transform: translateX(1px); }
+}
+
 .stab-track {
   height: 10px;
   background: var(--bg-deep);
@@ -88,6 +153,9 @@
   letter-spacing: 0.1em;
   margin-top: var(--sp-sm);
   min-height: 1.3em;
+  /* One line, always: "+3 % · RUHEBONUS" wrapping in a narrow panel
+     would make the status strip taller and push the messages down. */
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   color: var(--text-dim);
   transition: color var(--t-fast);
 }
@@ -394,6 +462,95 @@
 .evt.resolved.tone-crit .evt-head { font-size: 13px; letter-spacing: 0.06em; }
 .evt.resolved .evt-verdict { padding-top: 5px; }
 
+/* ═══ THE GLASS REACTS ══════════════════════════════════════════
+   A wash of colour at the edges of the screen when a call lands. Its
+   own layer — never .deck-screen, whose transform holds every fixed
+   layer inside the monitor, and never anything with a button in it.
+   One short fade per event, low intensity: emphasis, not a strobe. */
+.screen-fx {
+  position: absolute; inset: 0;
+  z-index: 800;
+  pointer-events: none;
+  opacity: 0;
+}
+.screen-fx.fx-bad {
+  box-shadow: inset 0 0 0 2px rgba(200,68,68,.55), inset 0 0 120px rgba(200,68,68,.26);
+  background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(200,68,68,.045) 3px 4px);
+  animation: fxFade .62s ease-out forwards;
+}
+/* a single tear of interference running down the glass */
+.screen-fx.fx-bad::after {
+  content: '';
+  position: absolute; left: 0; right: 0; top: 0; height: 14%;
+  background: linear-gradient(180deg, transparent, rgba(200,68,68,.10) 40%, rgba(255,255,255,.04) 50%, transparent);
+  animation: fxTear .5s steps(5) forwards;
+}
+.screen-fx.fx-good {
+  box-shadow: inset 0 0 0 2px rgba(46,207,98,.45), inset 0 0 110px rgba(46,207,98,.18);
+  animation: fxFade .7s ease-out forwards;
+}
+.screen-fx.fx-calm {
+  box-shadow: inset 0 0 0 1px rgba(200,138,40,.5), inset 0 0 140px rgba(200,138,40,.20);
+  animation: fxFade 1.2s ease-out forwards;
+}
+.screen-fx.fx-calm::after {
+  content: '';
+  position: absolute; top: 0; bottom: 0; width: 30%; left: -30%;
+  background: linear-gradient(90deg, transparent, rgba(255,200,120,.08), transparent);
+  animation: fxSweep 1.1s ease-out forwards;
+}
+@keyframes fxFade  { from { opacity: 1; } to { opacity: 0; } }
+@keyframes fxTear  { from { transform: translateY(-20%); } to { transform: translateY(640%); } }
+@keyframes fxSweep { to { transform: translateX(440%); } }
+
+/* ═══ ROUND TITLE ═══════════════════════════════════════════════
+   A band across the middle of the screen at the start of a round.
+   pointer-events: none — it lies over the feed for under two seconds
+   and never stands between the player and a button. */
+.round-card {
+  position: absolute; inset: 0;
+  z-index: 700;
+  pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+}
+.round-card.hidden { display: none; }
+.rc-band {
+  position: relative;
+  width: 100%;
+  padding: clamp(12px, 4cqh, 34px) var(--sp-md);
+  text-align: center;
+  background: linear-gradient(90deg, transparent, rgba(9,15,21,.94) 16%, rgba(9,15,21,.94) 84%, transparent);
+  border-top: 1px solid var(--bdr-mid);
+  border-bottom: 1px solid var(--bdr-mid);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  overflow: hidden;
+}
+/* the scan line crossing the band as it opens */
+.rc-band::after {
+  content: '';
+  position: absolute; top: 0; bottom: 0; left: -20%; width: 20%;
+  background: linear-gradient(90deg, transparent, rgba(58,143,212,.16), transparent);
+}
+.rc-num  { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.42em; color: var(--accent-system); }
+.rc-name {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 5.6cqw, 54px);
+  font-weight: 700; letter-spacing: 0.16em; line-height: 1.05;
+  color: var(--text-primary);
+  text-shadow: 0 0 24px rgba(58,143,212,.25);
+}
+.rc-tag  { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.24em; color: var(--accent-warn); }
+.rc-tag:empty { display: none; }
+
+.round-card.showing .rc-band        { animation: rcIn .5s cubic-bezier(.16,1,.3,1) both; }
+.round-card.showing .rc-band::after { animation: rcScan 1.1s ease-out .15s both; }
+.round-card.showing .rc-name        { animation: rcName .7s ease .08s both; }
+.round-card.leaving .rc-band        { animation: rcOut .42s ease forwards; }
+@keyframes rcIn   { from { clip-path: inset(50% 0 50% 0); opacity: 0; } to { clip-path: inset(0 0 0 0); opacity: 1; } }
+@keyframes rcOut  { from { clip-path: inset(0 0 0 0); opacity: 1; } to { clip-path: inset(50% 0 50% 0); opacity: 0; } }
+@keyframes rcName { from { letter-spacing: 0.5em; opacity: 0; } to { letter-spacing: 0.16em; opacity: 1; } }
+@keyframes rcScan { to { transform: translateX(700%); } }
+
 /* ═══ FINAL CALIBRATION — the ten seconds ═══════════════════════ */
 .final-stage {
   position: fixed; inset: 0;
@@ -492,6 +649,24 @@
   animation: titleIn 1s ease forwards;
 }
 .res-card { max-width: 520px; width: 100%; margin: auto; display: flex; flex-direction: column; gap: var(--sp-md); text-align: center; }
+.res-col  { display: flex; flex-direction: column; gap: var(--sp-md); }
+
+/* On a monitor with room for it the sheet opens out into two columns —
+   the figures on the left, the verdict and what it earned on the right —
+   so the whole assessment and its [ WEITER ] fit on the screen at once
+   instead of one of them being scrolled out of view. */
+@media (min-width: 1100px) and (min-height: 700px) {
+  .res-card {
+    max-width: 980px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: var(--sp-lg);
+    row-gap: var(--sp-md);
+    align-items: start;
+  }
+  .res-col-a { text-align: center; }
+  .res-card .res-actions { grid-column: 1 / -1; max-width: 520px; width: 100%; justify-self: center; }
+}
 .res-head { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.28em; color: var(--text-dim); text-transform: uppercase; }
 .res-title {
   font-family: var(--font-display);
@@ -512,11 +687,35 @@
 .res-rank { border: 1px solid var(--bdr-mid); padding: var(--sp-md); background: var(--bg-panel); position: relative; }
 .res-rank::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--rank-color, var(--accent-system)); }
 .res-rank-letter {
+  display: inline-block;
   font-family: var(--font-display);
   font-size: 70px; font-weight: 700; line-height: 1;
   color: var(--rank-color, var(--accent-system));
   text-shadow: 0 0 26px var(--rank-color, var(--accent-system));
+  /* stamped onto the sheet, so it sits in a stamp's frame, slightly askew */
+  padding: 2px 16px 0;
+  margin-top: 4px;
+  border: 3px solid var(--rank-color, var(--accent-system));
+  border-radius: 6px;
+  box-shadow: 0 0 20px -6px var(--rank-color, var(--accent-system)), inset 0 0 14px -6px var(--rank-color, var(--accent-system));
+  transform: rotate(-5deg);
 }
+.res-rank-letter.pre-stamp { opacity: 0; }
+.res-rank-letter.stamped   { animation: rankStamp .46s cubic-bezier(.2,1.5,.4,1) both; }
+@keyframes rankStamp {
+  0%   { opacity: 0; transform: scale(2.8) rotate(-16deg); }
+  55%  { opacity: 1; transform: scale(.9) rotate(-4deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-5deg); }
+}
+/* the sheet takes the hit */
+.res-rank:has(.stamped)::after {
+  content: '';
+  position: absolute; inset: 0;
+  border: 1px solid var(--rank-color, var(--accent-system));
+  pointer-events: none;
+  animation: rankRing .7s ease-out .2s both;
+}
+@keyframes rankRing { from { opacity: .8; } to { opacity: 0; } }
 .res-rank-name { font-family: var(--font-display); font-size: 19px; font-weight: 600; letter-spacing: 0.14em; color: var(--text-primary); margin-top: var(--sp-xs); }
 .res-rank-note { font-family: var(--font-mono); font-size: 11px; line-height: 1.6; color: var(--text-secondary); margin-top: var(--sp-sm); }
 
