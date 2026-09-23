@@ -71,6 +71,36 @@ const PPEvents = (() => {
     { head: 'PFLANZE 07',            body: 'LEBT // UNERWARTET' },
   ];
 
+  /* ═══ LIVE MESSAGES ═════════════════════════════════════════════
+     A few messages do not sit still. Their body is a function of the
+     moment, re-read four times a second while the card is up:
+
+       c.left     ms until this card expires
+       c.elapsed  ms it has been on screen
+       c.life     its whole lifetime
+       c.idle     ms since the player last touched ANYTHING
+       c.run      ms since the break began
+
+     The facility counting down to something that is never going to
+     happen is the purest version of the game: the number moves, the
+     chip does not, and the chip is the only thing that matters.
+     verify() samples every one of these across its whole range, so a
+     countdown can never accidentally spell a code. ───────────────── */
+  const two = n => String(Math.max(0, Math.floor(n))).padStart(2, '0');
+  const clock = ms => `${two(ms / 60000)}:${two((ms % 60000) / 1000)}`;
+  const secs = ms => { const s = Math.floor(ms / 1000); return s === 1 ? '1 SEKUNDE' : `${s} SEKUNDEN`; };
+  const LIVE = {
+    selfDestruct: c => `SELBSTZERSTÖRUNG IN 00:${two(Math.ceil(c.left / 1000))}. GRUND: NICHT ANGEGEBEN.`,
+    breakEnds:    c => `VERBLEIBEND: 00:${two(Math.ceil(c.left / 1000))}. VERLÄNGERUNG JETZT MÖGLICH.`,
+    // Races to 99 and then simply stays there, like every progress bar.
+    stuck:        c => `FORTSCHRITT: ${Math.min(99, Math.floor(c.elapsed / c.life * 160))} %. `
+                     + (c.elapsed / c.life < 0.62 ? 'RESTDAUER WIRD BERECHNET.' : 'RESTDAUER: UNBEKANNT.'),
+    // Counts the player's actual inactivity. Doing nothing is correct;
+    // the facility has simply noticed, and would like it on record.
+    idle:         c => `DAS TESTSUBJEKT TUT SEIT ${secs(c.idle)} NICHTS.`,
+    elapsed:      c => `VERSTRICHEN: ${clock(c.run)}. DAS IST DER ZWECK EINER PAUSE.`,
+  };
+
   /* ═══ DISTRACTION — looks like work, is not ═════════════════════
      Every one of these is safe to ignore. Pressing one is the
      entire failure mode of the game. ─────────────────────────── */
@@ -85,7 +115,7 @@ const PPEvents = (() => {
       onAct: [
         { speaker: 'SYSTEM', text: 'ARBEIT ERKANNT.' },
         { speaker: 'R-3MI', text: '„Aber null Komma drei Prozent sind null Komma drei Prozent.“' },
-        { speaker: 'V-TGM', text: 'Remi.', sub: 'Remi.' },
+        { speaker: 'V-TGM', text: 'R-3MI.', sub: 'R-3MI.' },
         { speaker: 'R-3MI', text: '„Schon gut.“' },
       ],
       onIgnore: [
@@ -97,8 +127,8 @@ const PPEvents = (() => {
     { chip: 'HINWEIS',   tone: 'quiet', head: 'ARCHIVIERUNG EMPFOHLEN',    body: '4 EINTRÄGE SEIT 2031 UNSORTIERT.',                        action: '[ ARCHIVIEREN ]' },
     { chip: 'WARTUNG',   tone: 'quiet', head: 'STUHL 02: GERINGFÜGIGE ABWEICHUNG', body: '0.4° // KEIN CODE VERGEBEN.',            action: '[ AUSRICHTEN ]' },
     { chip: 'ACHTUNG',   tone: 'warn',  head: 'KAFFEE WIRD KÄLTER',        body: 'VERLAUF: ERWARTUNGSGEMÄSS. PHYSIK: UNVERÄNDERT.',         action: '[ GEGENMASSNAHME EINLEITEN ]' },
-    { chip: 'DRINGEND',  tone: 'warn',  head: 'PAUSENZEIT VERSTREICHT',    body: 'DAS IST DER ZWECK EINER PAUSE.',                          action: '[ PAUSE OPTIMIEREN ]' },
-    { chip: 'WARNUNG',   tone: 'warn',  head: 'AKTIVITÄTSDEFIZIT ERKANNT', body: 'DAS TESTSUBJEKT TUT SEIT 20 SEKUNDEN NICHTS.',            action: '[ AKTIVITÄT NACHWEISEN ]' },
+    { chip: 'DRINGEND',  tone: 'warn',  head: 'PAUSENZEIT VERSTREICHT',    live: LIVE.elapsed,                                             action: '[ PAUSE OPTIMIEREN ]' },
+    { chip: 'WARNUNG',   tone: 'warn',  head: 'AKTIVITÄTSDEFIZIT ERKANNT', live: LIVE.idle,                                                action: '[ AKTIVITÄT NACHWEISEN ]' },
     { chip: 'WARNUNG',   tone: 'warn',  head: 'KEINE TASTENEINGABE SEIT 34 SEKUNDEN', body: 'LETZTE EINGABE: UNBEKANNT.',                  action: '[ EINGABE TÄTIGEN ]' },
     { chip: 'KRITISCH',  tone: 'crit',  head: 'KEINE KRITISCHEN FEHLER VORHANDEN', body: 'DIESE MELDUNG IST KRITISCH EINGESTUFT.',          action: '[ BESTÄTIGEN ]' },
     { chip: 'KRITISCH',  tone: 'crit',  head: 'PROTOKOLL 12-B',            body: 'BESTÄTIGUNG ANGEFORDERT. GRUND: FORMSACHE.',              action: '[ BESTÄTIGEN ]' },
@@ -106,6 +136,7 @@ const PPEvents = (() => {
     { chip: 'ALARM',     tone: 'crit',  head: 'PAUSE WEITERHIN AKTIV',     body: 'DIESER ZUSTAND IST BEABSICHTIGT.',                        action: '[ ZUR KENNTNIS NEHMEN ]' },
     { chip: 'BERICHT',   tone: 'info',  head: 'LEISTUNGSBERICHT BEREIT',   body: 'UMFANG: 340 SEITEN. ZEITRAUM: DIESE PAUSE.',              action: '[ BERICHT ÖFFNEN ]' },
     { chip: 'HINWEIS',   tone: 'quiet', head: 'ERHOLUNG NICHT MESSBAR',    body: 'MESSVERFAHREN FEHLT. KALIBRIERUNG ANGEBOTEN.',            action: '[ ERHOLUNG KALIBRIEREN ]' },
+    { chip: 'HINWEIS',   tone: 'info',  head: 'AKTUALISIERUNG LÄUFT',      live: LIVE.stuck,                                               action: '[ BESCHLEUNIGEN ]' },
   ];
 
   /* ═══ R-3MI's own temptations ═══════════════════════════════════
@@ -133,7 +164,7 @@ const PPEvents = (() => {
       ],
       onIgnore: [
         { speaker: 'R-3MI', text: '„Schon gut. Ich sitze einfach weiter hier.“' },
-        { speaker: 'V-TGM', text: 'You are doing great, Remi.', sub: 'Du machst das großartig, Remi.' },
+        { speaker: 'V-TGM', text: 'You are doing great, R-3MI.', sub: 'Du machst das großartig, R-3MI.' },
       ],
     },
     {
@@ -394,6 +425,7 @@ const PPEvents = (() => {
       /* ── RUNDE 0 — the first button ─────────────────────────── */
       {
         id: 0, name: 'EINGEWÖHNUNG', duration: 26000,
+        tagline: 'BITTE NICHT ARBEITEN.',
         banner: 'PAUSE LÄUFT.',
         script: [
           { t: 800,  say: [
@@ -429,6 +461,7 @@ const PPEvents = (() => {
       /* ── RUNDE 1 — noise ────────────────────────────────────── */
       {
         id: 1, name: 'GRUNDRAUSCHEN', duration: 40000,
+        tagline: 'MESSWERTE. NUR MESSWERTE.',
         banner: 'PAUSE LÄUFT. MESSWERTE WERDEN ÜBERTRAGEN.',
         script: [
           { t: 600,   ev: info(u.info) },
@@ -445,6 +478,7 @@ const PPEvents = (() => {
       /* ── RUNDE 2 — the rule, then the first real one ─────────── */
       {
         id: 2, name: 'ANLAGENCODES', duration: 62000,
+        tagline: 'EINE REGEL. SIE BLEIBT.',
         banner: 'SICHERHEITSREGEL WIRD ÜBERTRAGEN.',
         script: [
           { t: 400, say: [
@@ -453,7 +487,7 @@ const PPEvents = (() => {
             { speaker: 'SYSTEM', text: 'ALLE ANDEREN MELDUNGEN SIND WÄHREND DER PAUSE NUR INFORMATIV.' },
             { speaker: 'V-TGM', text: 'Finally. Something useful.', sub: 'Endlich. Etwas Brauchbares.' },
             { speaker: 'R-3MI', text: '„Ich schreibe mit.“' },
-            { speaker: 'V-TGM', text: 'It is on the screen, Remi. Permanently.', sub: 'Es steht auf dem Bildschirm, Remi. Dauerhaft.' },
+            { speaker: 'V-TGM', text: 'It is on the screen, R-3MI. Permanently.', sub: 'Es steht auf dem Bildschirm, R-3MI. Dauerhaft.' },
             { speaker: 'R-3MI', text: '„Ich schreibe trotzdem mit.“' },
           ] },
           { t: 500,   do: 'ruleCard' },
@@ -469,6 +503,7 @@ const PPEvents = (() => {
       /* ── RUNDE 3 — R-3MI is the problem now ─────────────────── */
       {
         id: 3, name: 'ABGESCHLOSSENE VORGÄNGE', duration: 56000,
+        tagline: 'NEUE REGEL: E — ERLEDIGT',
         banner: 'REGELERGÄNZUNG WIRD ÜBERTRAGEN.',
         script: [
           { t: 700, say: [
@@ -491,6 +526,7 @@ const PPEvents = (() => {
       /* ── RUNDE 4 — presentation warfare ─────────────────────── */
       {
         id: 4, name: 'DAUERKONTAKT', duration: 64000,
+        tagline: 'NEUE REGEL: H — HALTEN',
         banner: 'REGELERGÄNZUNG WIRD ÜBERTRAGEN.',
         script: [
           { t: 500, say: [
@@ -505,7 +541,25 @@ const PPEvents = (() => {
           { t: 20000, ev: { ...fake(u.fake), tone: 'crit', chip: 'KRITISCH' } },
           { t: 26000, ev: real('M07') },                      // quiet, small, grey — and real
           { t: 33000, ev: closed(u.closed) },
-          { t: 39000, ev: { ...fake(u.fake), tone: 'crit', chip: 'ALARM' } },
+          // The loudest thing in the round, counting down in front of
+          // you, and not a code in sight.
+          { t: 38000, ev: fakeNamed({
+              chip: 'ALARM', tone: 'crit',
+              head: 'SELBSTZERSTÖRUNG EINGELEITET',
+              live: LIVE.selfDestruct,
+              action: '[ ABBRECHEN ]',
+              life: 9000,
+              onAct: [
+                { speaker: 'SYSTEM', text: 'ABBRUCH NICHT ERFORDERLICH. ES LAG KEINE SELBSTZERSTÖRUNG VOR. UNNÖTIGE ARBEIT ERKANNT.' },
+                { speaker: 'R-3MI', text: '„Woher hätte ich das wissen sollen?!“' },
+                { speaker: 'V-TGM', text: 'No code.', sub: 'Kein Code.' },
+              ],
+              onIgnore: [
+                { speaker: 'SYSTEM', text: 'SELBSTZERSTÖRUNG ABGESCHLOSSEN. ERGEBNIS: KEINES. ES WAR EINE ÜBUNG.' },
+                { speaker: 'R-3MI', text: '„Ich hatte die Augen zu.“' },
+                { speaker: 'V-TGM', text: 'You do not have eyelids.', sub: 'Du hast keine Augenlider.' },
+              ],
+            }) },
           { t: 45000, ev: held('M04') },
           { t: 55000, ev: { ...fake(u.fake), tone: 'crit', chip: 'DRINGEND' } },
         ],
@@ -514,6 +568,7 @@ const PPEvents = (() => {
       /* ── RUNDE 5 — the Anlage argues with itself ────────────── */
       {
         id: 5, name: 'ZIELKONFLIKT', duration: 56000,
+        tagline: 'NEUE REGEL: W — WIDERRUF',
         banner: 'REGELERGÄNZUNG WIRD ÜBERTRAGEN.',
         script: [
           { t: 600,  say: [
@@ -553,6 +608,7 @@ const PPEvents = (() => {
       /* ── FINALRUNDE — everything at once ────────────────────── */
       {
         id: 6, name: 'PAUSENSTRESS', duration: 82000,
+        tagline: 'DIE REGELN ÄNDERN SICH NICHT.',
         banner: 'ABSCHLIESSENDE BELASTUNGSPHASE.',
         chaos: true,
         script: [
@@ -577,7 +633,27 @@ const PPEvents = (() => {
           { t: 33000, ev: fake(u.fake) },
           { t: 35000, ev: info(u.info) },
           { t: 37000, ev: remi(u.remi) },
-          { t: 39000, ev: { ...fake(u.fake), tone: 'crit', chip: 'DRINGEND' } },
+          // The one fake built to be irresistible in the last round:
+          // the break itself, running out, and a button to stop it. Placed well
+          // clear of the set-piece exchange at 69 s, which a reaction
+          // landing on top of it would cut off mid-sentence.
+          { t: 39000, ev: fakeNamed({
+              chip: 'DRINGEND', tone: 'crit',
+              head: 'PAUSE ENDET GLEICH',
+              live: LIVE.breakEnds,
+              action: '[ PAUSE VERLÄNGERN ]',
+              life: 8000,
+              onAct: [
+                { speaker: 'SYSTEM', text: 'VERLÄNGERUNG BEANTRAGT. BEARBEITUNGSDAUER: SECHS STUNDEN. UNNÖTIGE ARBEIT ERKANNT.' },
+                { speaker: 'R-3MI', text: '„Ich wollte doch nur mehr Pause.“' },
+                { speaker: 'V-TGM', text: 'And you got paperwork.', sub: 'Und hast Papierkram bekommen.' },
+              ],
+              onIgnore: [
+                { speaker: 'SYSTEM', text: 'ANZEIGEFEHLER. DIE PAUSE ENDET NICHT.' },
+                { speaker: 'R-3MI', text: '„…Sie hat gelogen.“' },
+                { speaker: 'V-TGM', text: 'She does that.', sub: 'Das macht sie.' },
+              ],
+            }) },
           { t: 41500, ev: info(u.info) },
           { t: 43500, ev: held('M04') },
           { t: 46000, ev: fake(u.fake) },
@@ -622,8 +698,19 @@ const PPEvents = (() => {
     const looksLikeCode = s => /\b[NHEW]-\s?\d/i.test(String(s || ''));
     const SHAPE = { INTERVENTION: /^[NH]-\d{2}$/, CLOSED: /^E-\d{2}$/, REVOKE: /^W-\d{2}$/ };
 
+    // A live body is checked at every moment it could show: the whole
+    // lifetime, idle counters up to ten minutes, a run up to an hour.
+    const liveSamples = e => {
+      if (typeof e.live !== 'function') return '';
+      const life = e.life || 7500, out = [];
+      for (let k = 0; k <= 40; k++) {
+        const el = life * k / 40;
+        out.push(e.live({ left: life - el, elapsed: el, life, idle: k * 15000, run: k * 90000 }));
+      }
+      return out.join(' | ');
+    };
     const check = (e, where) => {
-      const text = [e.chip, e.head, e.body, e.action].join(' | ');
+      const text = [e.chip, e.head, e.body, e.action, liveSamples(e)].join(' | ');
       // Three kinds legitimately carry a code: a genuine intervention,
       // one that has already been closed, and a withdrawal of one.
       // Everything else must be free of the pattern, or the single rule
@@ -647,7 +734,24 @@ const PPEvents = (() => {
     // The scripted one-offs live inside rounds(); walk them too.
     rounds().forEach(r => (r.script || []).forEach((s, i) => {
       if (s.ev) check(s.ev, `runde ${r.id} script[${i}]`);
+      if (s.ev) ['onAct', 'onIgnore', 'onMiss'].forEach(k => speech(s.ev[k], `runde ${r.id} script[${i}].${k}`));
+      if (s.say) speech(s.say, `runde ${r.id} script[${i}]`);
     }));
+
+    // And everything anybody says. The units are R-3MI and V-TGM and
+    // address each other by designation only — never by a nickname.
+    function speech(spec, where) {
+      const flat = [].concat(...(spec || []).map(x => Array.isArray(x) ? x : [x]));
+      flat.forEach(l => {
+        const t = `${l.text || ''} ${l.sub || ''}`;
+        if (/\b(remi|amanda)\b/i.test(t)) problems.push(`${where}: Anrede ohne Bezeichnung → "${t}"`);
+      });
+    }
+    const allEvents = [...DISTRACTION, ...SOCIAL, ...CLOSED,
+                       ...Object.keys(INTERVENTIONS).map(k => INTERVENTIONS[k])];
+    allEvents.forEach((e, i) => ['onAct', 'onIgnore', 'onMiss'].forEach(k => speech(e[k], `event[${i}].${k}`)));
+    speech(CLOSED_ACT, 'CLOSED_ACT'); speech(CLOSED_IGNORE, 'CLOSED_IGNORE');
+    speech(revoke('N-00').onIgnore, 'REVOKE');
 
     if (problems.length) console.error('[PAUSENPROTOKOLL] Fairness-Regel verletzt:\n' + problems.join('\n'));
     return problems;

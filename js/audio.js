@@ -115,6 +115,14 @@ const PPAudio = (() => {
     [1300, 1750, 1100].forEach((f, i) => tone({ freq: f, type: 'square', dur: 0.04, vol: 0.05, delay: 0.09 + i * 0.055 }));
   }
 
+  /* A rubber stamp on paper: a dull, short thump with no ring. Kept
+     well apart from the KLONK, which stays reserved for things that
+     physically change in the room. */
+  function stamp() {
+    tone({ freq: 118, type: 'sine',     dur: 0.10, vol: 0.20, glideTo: 62 });
+    tone({ freq: 340, type: 'triangle', dur: 0.03, vol: 0.05, glideTo: 180 });
+  }
+
   /* A single soft tick. Used by the final calibration, once a second,
      and by nothing else — so silence is audible when it stops. */
   function tick() { tone({ freq: 1180, type: 'sine', dur: 0.022, vol: 0.045 }); }
@@ -191,7 +199,7 @@ const PPAudio = (() => {
     ensureCtx: ensure,
     resume, tone, blip, click,
     notify, alarm, maintenance,
-    good, wrong, award, klonk, spill, tick,
+    good, wrong, award, klonk, spill, stamp, tick,
     hum, setMuted, isMuted, toggleMute,
   };
 })();

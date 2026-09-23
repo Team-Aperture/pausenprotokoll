@@ -175,6 +175,11 @@
           </svg>
         </div>
 
+        <!-- R-3MI and V-TGM, by the terminal, waiting for their break
+             to start. The same figures that sit at the desk later. -->
+        <div class="caf-crew crew-r3mi" style="left:50.6%;top:42.5%;width:6.4%;height:18.5%"><div class="crew-fig" data-crew="R-3MI"></div></div>
+        <div class="caf-crew crew-vtgm" style="left:72.2%;top:43.5%;width:6.4%;height:17.5%"><div class="crew-fig" data-crew="V-TGM"></div></div>
+
         <div class="caf-motes" id="cafMotes"></div>
       </div>
     </div>
@@ -219,6 +224,26 @@
   <div class="deck" id="deck">
     <div class="deck-room" aria-hidden="true"></div>
     <div class="deck-spill" aria-hidden="true"></div>
+    <!-- The two of them, at the desk, watching the screen with you — and
+         the mug that the whole of N-03 and N-07 is about. Only drawn
+         where the window leaves a desk to sit at. -->
+    <div class="deck-crew" id="deckCrew" aria-hidden="true">
+      <div class="crew-slot crew-r3mi">
+        <div class="crew-fig" data-crew="R-3MI"></div>
+        <div class="desk-mug" id="deskMug">
+          <svg class="mug-svg" viewBox="0 0 40 40">
+            <path class="mug-handle" d="M29 17 q8 1 7 7 q-1 6 -8 6"/>
+            <rect class="mug-body" x="5" y="11" width="25" height="27" rx="3"/>
+            <rect class="mug-rim" x="5" y="11" width="25" height="4" rx="2"/>
+          </svg>
+          <div class="mug-steam"><i></i><i></i><i></i></div>
+          <div class="mug-puddle"></div>
+        </div>
+      </div>
+      <div class="crew-slot crew-vtgm">
+        <div class="crew-fig" data-crew="V-TGM"></div>
+      </div>
+    </div>
     <div class="deck-bezel">
       <div class="deck-screen" id="deckScreen">
 
@@ -228,6 +253,20 @@
         <div class="bg-grid"      aria-hidden="true"></div>
         <div class="bg-scanlines" aria-hidden="true"></div>
         <div class="bg-vignette"  aria-hidden="true"></div>
+
+        <!-- Colour at the edges of the glass when a call lands. Emphasis
+             only: every outcome is also written on the card itself. -->
+        <div class="screen-fx" id="screenFx" aria-hidden="true"></div>
+
+        <!-- The title band at the start of each round. Never takes a
+             click; the live region announces the round instead. -->
+        <div class="round-card hidden" id="roundCard" aria-hidden="true">
+          <div class="rc-band">
+            <div class="rc-num"></div>
+            <div class="rc-name"></div>
+            <div class="rc-tag"></div>
+          </div>
+        </div>
 
         <!-- ── SYSTEM BAR ───────────────────────────────────── -->
         <header class="sys-bar">
@@ -252,7 +291,15 @@
           <section class="panel panel-accent panel-stab">
             <div class="stab-head">
               <h2 class="panel-label">Pausenstabilität</h2>
-              <div class="stab-value" id="stabValue">100<span class="unit">%</span></div>
+              <!-- The streak sits beside the number, never under it: the
+                   rail must not grow a line on a phone. -->
+              <div class="stab-row">
+                <div class="stab-value" id="stabValue">100<span class="unit">%</span></div>
+                <div class="streak" id="streak">
+                  <span class="streak-label" id="streakLabel">RUHESERIE</span>
+                  <span class="streak-n" id="streakN">0</span>
+                </div>
+              </div>
               <div class="stab-track" aria-hidden="true"><div class="stab-fill" id="stabFill"></div></div>
               <div class="stab-delta" id="stabDelta"></div>
             </div>

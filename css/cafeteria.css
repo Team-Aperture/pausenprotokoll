@@ -593,6 +593,126 @@
 @media (min-width: 900px) and (min-height: 860px)  { :root { --desk-band: 150px; } }
 @media (min-width: 700px) and (min-height: 1000px) { :root { --desk-band: 186px; } }
 
+/* ═══ THE CREW AT THE DESK ══════════════════════════════════════
+   R-3MI on the left with his mug, V-TGM on the right, sitting either
+   side of where the dialogue strip comes up — which is what makes the
+   strip read as the two of them talking rather than as a caption.
+   Only drawn when the window leaves a desk wide enough to sit at: the
+   dialogue box is 920px wide, and they sit just outside it. Scenery,
+   never a control: pointer-events are off and nothing here is focusable.
+   ═══════════════════════════════════════════════════════════════ */
+.deck-crew { display: none; position: absolute; left: 0; right: 0; bottom: 0; pointer-events: none; }
+@media (min-width: 1280px) and (min-height: 860px) {
+  .deck-crew { display: block; height: calc(var(--desk-band) + var(--room-gap)); }
+}
+.crew-slot {
+  position: absolute; bottom: 0;
+  width: 150px;
+  height: min(180px, calc(var(--desk-band) + var(--room-gap) - 14px));
+}
+.deck-crew .crew-r3mi { right: calc(50% + 474px); }
+.deck-crew .crew-vtgm { left:  calc(50% + 474px); }
+.crew-fig { position: absolute; inset: 0; }
+
+.crew-svg {
+  width: 100%; height: 100%; display: block; overflow: visible;
+  filter: drop-shadow(0 0 3px var(--bot-color));
+  transition: filter var(--t-mid);
+  transform-origin: 50% 100%;
+}
+/* solid bodies against the warm room, with the series' line work */
+.crew-svg .bot-frame { fill: rgba(12,8,6,0.88); }
+.crew-neck  { fill: rgba(12,8,6,0.88); stroke: var(--bot-color); stroke-width: 1.5; }
+.crew-arm   { fill: none; stroke: var(--bot-color); stroke-width: 2.2; stroke-linecap: round; }
+.crew-light { fill: var(--bot-color); opacity: .45; animation: crewLight 3.2s ease-in-out infinite; }
+@keyframes crewLight { 0%,100% { opacity: .3; } 50% { opacity: .75; } }
+
+/* R-3MI cannot sit still. V-TGM hovers, perfectly level. */
+.crew-r3mi .crew-svg { animation: crewFidget 6.5s ease-in-out infinite; }
+.crew-vtgm .crew-svg { animation: crewHover 5.2s ease-in-out infinite; }
+@keyframes crewFidget {
+  0%, 68%, 100% { transform: none; }
+  74% { transform: rotate(-2.4deg); }
+  82% { transform: rotate(1.6deg); }
+  88% { transform: none; }
+}
+@keyframes crewHover { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.deck-crew.at-ease .crew-r3mi .crew-svg,
+.deck-crew.at-ease .crew-r3mi .bot-eyes { animation: none; }
+
+/* Whoever has the line lights up; while it is still being typed, the
+   mouth moves — same cue as the portrait in the strip. */
+body[data-speaker="R-3MI"] .crew-r3mi .crew-svg,
+body[data-speaker="V-TGM"] .crew-vtgm .crew-svg {
+  filter: drop-shadow(0 0 2px var(--bot-color)) drop-shadow(0 0 12px var(--bot-color));
+}
+body.typing[data-speaker="R-3MI"] .crew-r3mi .bot-mouth,
+body.typing[data-speaker="V-TGM"] .crew-vtgm .bot-mouth { animation: botMouth .16s steps(2) infinite; }
+
+/* How the room takes a call. */
+.deck-crew[data-mood="oops"] .crew-r3mi .crew-svg { animation: crewJolt .5s ease; }
+.deck-crew[data-mood="oops"] .crew-vtgm .bot-eye  { animation: none; transform: scaleY(.38); }
+.deck-crew[data-mood="yay"]  .crew-r3mi .crew-svg { animation: crewHop .55s ease; }
+.deck-crew[data-mood="yay"]  .crew-light          { opacity: 1; }
+@keyframes crewJolt { 0%,100% { transform: none; } 25% { transform: translateY(-6px) rotate(-3deg); } 55% { transform: translateY(1px) rotate(1deg); } }
+@keyframes crewHop  { 0%,100% { transform: none; } 40% { transform: translateY(-8px); } 70% { transform: translateY(1px); } }
+
+/* ─── The mug ────────────────────────────────────────────────────
+   Next to R-3MI's hand. When a coffee code is missed it goes over and
+   the desk gets a puddle; somebody fetches a fresh one a few seconds
+   later. When one is saved, it wobbles and stays put. */
+.desk-mug {
+  position: absolute; right: 2px; bottom: 12px;
+  width: 38px; height: 38px;
+}
+.mug-svg {
+  position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible;
+  transform-origin: 12% 100%;
+  transition: transform .5s cubic-bezier(.55,0,.85,.35);
+  filter: drop-shadow(0 3px 4px rgba(0,0,0,.6));
+}
+.mug-body   { fill: var(--caf-cream); }
+.mug-rim    { fill: #c9b089; }
+.mug-handle { fill: none; stroke: var(--caf-cream); stroke-width: 3.5; }
+.mug-steam  { position: absolute; left: 28%; bottom: 88%; width: 10px; height: 30px; transition: opacity .3s ease; }
+.mug-steam i {
+  position: absolute; bottom: 0; left: 50%;
+  width: 3px; height: 3px; border-radius: 50%;
+  background: rgba(255,235,205,0.5); filter: blur(2px);
+  animation: cafSteam 3.8s ease-out infinite;
+}
+.mug-steam i:nth-child(2) { animation-delay: 1.3s; }
+.mug-steam i:nth-child(3) { animation-delay: 2.6s; }
+.mug-puddle {
+  position: absolute; right: 16px; bottom: -3px;
+  width: 0; height: 9px; border-radius: 50%;
+  background: radial-gradient(ellipse at 60% 50%, rgba(78,44,18,.95), rgba(52,28,10,.85) 58%, transparent 72%);
+  transition: width .9s ease .35s, opacity .6s ease;
+}
+.desk-mug.spilled .mug-svg    { transform: rotate(-96deg); }
+.desk-mug.spilled .mug-steam  { opacity: 0; }
+.desk-mug.spilled .mug-puddle { width: 74px; }
+.desk-mug.refill  .mug-svg    { animation: mugRefill .6s ease both; }
+.desk-mug.refill  .mug-puddle { width: 74px; opacity: .45; }   /* the stain stays */
+.desk-mug.saved   .mug-svg    { animation: mugWobble .7s ease; }
+@keyframes mugRefill { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
+@keyframes mugWobble {
+  0%,100% { transform: none; }
+  20% { transform: rotate(-14deg); } 45% { transform: rotate(8deg); }
+  70% { transform: rotate(-3deg); }
+}
+
+/* ─── The same two, in the cafeteria ─────────────────────────────
+   Standing by the terminal while the menu drifts past, waiting for a
+   break they have not yet been told how to take. */
+.caf-crew { position: absolute; }
+.caf-crew .crew-svg { filter: drop-shadow(0 0 2px var(--bot-color)) drop-shadow(0 6px 10px rgba(0,0,0,.55)); }
+
+@media (prefers-reduced-motion: reduce) {
+  .crew-svg, .crew-light, .mug-steam i { animation: none !important; }
+  .mug-svg, .mug-puddle { transition: none !important; }
+}
+
 /* The strip belongs to the room, so it clears the monitor and gets a
    little warmth under it — but the box itself stays facility issue,
    because that is how the series writes these two talking. */

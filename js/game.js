@@ -19,6 +19,15 @@ const PPGame = (() => {
   const COST_MISSED      = 8;   // let a genuine maintenance code expire
   const GAIN_CORRECT     = 2;   // handled a genuine one — a little credit back
 
+  /* A calm streak. Every right call — a genuine code handled, a fake
+     left alone, a closed or withdrawn code left alone — adds one; a
+     wrong one ends it. Every fifth in a row hands back a single point
+     of stability: the game rewarding the thing it is about, which is
+     sustained, deliberate nothing. */
+  const STREAK_BONUS_EVERY = 5;
+  const STREAK_BONUS       = 1;
+  const CLOSE_CALL_MS      = 1500;  // "KNAPP": handled with this little left
+
   const FINAL_SECONDS    = 10;
 
   let el = {};
@@ -34,6 +43,9 @@ const PPGame = (() => {
   let running = false;
   let finished = false;        // the run has produced its result
   let cancelFinal = null;      // tears down the final calibration
+  let runStart = 0;            // for the messages that count the break
+  let lastInput = 0;           // for the one that counts YOUR inactivity
+  let pendingLine = null;      // a streak remark waiting for a quiet moment
 
   /* ─── small helpers ───────────────────────────────────────────── */
   const now = () => performance.now();
@@ -93,6 +105,9 @@ const PPGame = (() => {
       fakesOffered: 0,      // how many unnecessary buttons were ever offered
       finalResets: 0,
       poweredOff: false,   // the monitor was switched off mid-break
+      streak: 0,            // right calls in a row, right now
+      bestStreak: 0,        // the longest run of them
+      fastest: 0,           // quickest genuine code, ms (0 = none yet)
     };
   }
 
@@ -116,6 +131,25 @@ const PPGame = (() => {
       SOZIAL:     document.getElementById('ruleSocial'),
     };
     el.live     = document.getElementById('liveRegion');
+    el.streak   = document.getElementById('streak');
+    el.streakN  = document.getElementById('streakN');
+    el.streakL  = document.getElementById('streakLabel');
+    el.fx       = document.getElementById('screenFx');
+    el.rCard    = document.getElementById('roundCard');
+    el.crew     = document.getElementById('deckCrew');
+    el.mug      = document.getElementById('deskMug');
+
+    // Anything the player does, anywhere, counts as input. One of the
+    // facility's messages reads this back to them.
+    const touched = () => { lastInput = now(); };
+    document.addEventListener('pointerdown', touched, true);
+    document.addEventListener('keydown', touched, true);
+
+    // The dialogue strip just came up (or went down) over the bottom of
+    // the screen. Re-fit immediately: the periodic check is a quarter of
+    // a second away, and for that quarter-second a button could sit
+    // under the strip.
+    window.addEventListener('pp:space', () => { if (running) trimToFit(); });
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -170,6 +204,13 @@ const PPGame = (() => {
     }
     socialExplained = false;
     spoken.clear();
+    pendingLine = null;
+    runStart = now();
+    lastInput = now();
+    stats.streak = stats.streak || 0;
+    stats.bestStreak = stats.bestStreak || 0;
+    paintStreak();
+    desk('reset');
 
     // Which rules are on the board is RUN state, so it is set here for
     // every start — a replay used to inherit the previous run's rules
@@ -206,6 +247,10 @@ const PPGame = (() => {
     el.roundNm.appendChild(num);
     el.roundNm.appendChild(nm);
     el.banner.textContent  = r.banner || '';
+    roundCard(i, r);
+    // The title band is decoration and hidden from assistive technology;
+    // the round itself is not.
+    announce(`Runde ${i}: ${r.name}.${r.tagline ? ' ' + r.tagline : ''}`);
 
     const started = now();
     const tickClock = () => {
@@ -273,6 +318,7 @@ const PPGame = (() => {
     showRuleCard();
     li.classList.remove('hidden');
     li.classList.add('fresh');
+    trimToFit();                      // the rule card just grew a line
     PPAudio.klonk();
     announce('Neue Sicherheitsregel: ' + (RULE_TEXT[key] || key));
   }
@@ -281,6 +327,7 @@ const PPGame = (() => {
     if (ruleVisible) return;
     ruleVisible = true;
     el.ruleCard.classList.remove('hidden');
+    trimToFit();
     PPAudio.klonk();                          // a rule is a physical placard
     announce('Sicherheitsregel eingeblendet: Ein Anlagencode N gefolgt von zwei Ziffern bedeutet, Eingriff erforderlich. Meldungen ohne Code sind nur informativ.');
   }
@@ -338,6 +385,7 @@ const PPGame = (() => {
     card.born = now();
     card.life = ev.life || (ev.action ? 7500 : 6500);
     live.push(card);
+    paintLive(card, card.born);
 
     announce(`${ev.chip ? ev.chip + ': ' : ''}${ev.head}`);
 
@@ -372,14 +420,15 @@ const PPGame = (() => {
     top.appendChild(head);
     node.appendChild(top);
 
-    if (ev.body) {
-      const body = document.createElement('p');
-      body.className = 'evt-body';
-      body.textContent = ev.body;
-      node.appendChild(body);
+    let bodyEl = null;
+    if (ev.body || ev.live) {
+      bodyEl = document.createElement('p');
+      bodyEl.className = 'evt-body';
+      bodyEl.textContent = ev.body || '';
+      node.appendChild(bodyEl);
     }
 
-    const card = { node, ev, resolved: false, action: null, bar: null };
+    const card = { node, ev, resolved: false, action: null, bar: null, bodyEl };
 
     if (ev.action) {
       const btn = document.createElement('button');
@@ -569,7 +618,12 @@ const PPGame = (() => {
       });
       // Reading layout every frame would be wasteful; four times a
       // second is far faster than anything that changes the layout.
-      if (t - lastTrim > 250) { lastTrim = t; trimToFit(); }
+      if (t - lastTrim > 250) {
+        lastTrim = t;
+        live.forEach(c => { if (!c.resolved) paintLive(c, t); });
+        trimToFit();                  // after, so a body that grew a line is caught
+        flushPendingLine(t);
+      }
       rafId = requestAnimationFrame(step);
     };
     rafId = requestAnimationFrame(step);
@@ -578,6 +632,159 @@ const PPGame = (() => {
     if (rafId) cancelAnimationFrame(rafId);
     rafId = null;
   }
+
+  /* A live message re-reads its body. Only written when it changed, so
+     a screen reader is not handed the same sentence four times a second
+     and layout is not dirtied for nothing. */
+  function paintLive(card, t) {
+    if (!card.ev.live || !card.bodyEl) return false;
+    const elapsed = Math.max(0, t - card.born);
+    const text = card.ev.live({
+      left: Math.max(0, card.life - elapsed), elapsed, life: card.life,
+      idle: Math.max(0, t - lastInput), run: Math.max(0, t - runStart),
+    });
+    if (card.bodyEl.textContent === text) return false;
+    card.bodyEl.textContent = text;
+    return true;
+  }
+
+  /* ═══ THE CALM STREAK ═══════════════════════════════════════════
+     Returns the stability bonus this call earned, so the caller can
+     fold it into the one number it shows the player. */
+  function judge(ok) {
+    if (!ok) {
+      const lost = stats.streak;
+      stats.streak = 0;
+      paintStreak(lost >= 3 ? 'lost' : '');
+      return 0;
+    }
+    stats.streak++;
+    if (stats.streak > stats.bestStreak) stats.bestStreak = stats.streak;
+    const milestone = stats.streak % STREAK_BONUS_EVERY === 0;
+    paintStreak(milestone ? 'milestone' : 'up');
+    if (!milestone) return 0;
+    announce(`Ruheserie ${stats.streak}. Pausenstabilität plus ${STREAK_BONUS} Prozent.`);
+    remark(stats.streak);
+    fx('calm');
+    return STREAK_BONUS;
+  }
+
+  function paintStreak(kind) {
+    if (!el.streak) return;
+    el.streakN.textContent = String(stats ? stats.streak : 0);
+    el.streak.classList.toggle('hot', !!stats && stats.streak >= 10);
+    // Not colour alone: losing a streak changes the WORD, not just the hue.
+    el.streakL.textContent = kind === 'lost' ? 'VERLOREN' : 'RUHESERIE';
+    ['up', 'milestone', 'lost'].forEach(k => el.streak.classList.remove(k));
+    if (!kind || reduced()) return;
+    void el.streak.offsetWidth;                    // restart the animation
+    el.streak.classList.add(kind);
+    if (kind === 'lost') after(1600, () => {
+      el.streakL.textContent = 'RUHESERIE';
+      el.streak.classList.remove('lost');
+    });
+  }
+
+  /* The units notice a streak — but never talk over something that is
+     already being said. The remark waits for a quiet moment and gives
+     up after a few seconds, because a compliment about a streak that
+     has since ended is worse than none. */
+  const REMARKS = {
+    5:  [ [ { speaker: 'R-3MI', text: '„Ich tue gerade sehr erfolgreich nichts.“' },
+            { speaker: 'V-TGM', text: 'Do not announce it. It ruins it.', sub: 'Nicht ansagen. Das ruiniert es.' } ],
+          [ { speaker: 'V-TGM', text: 'Five in a row. Keep your hands where they are.', sub: 'Fünf am Stück. Hände bleiben, wo sie sind.' } ] ],
+    10: [ [ { speaker: 'V-TGM', text: 'Ten in a row. I am almost proud.', sub: 'Zehn am Stück. Ich bin fast stolz.' },
+            { speaker: 'R-3MI', text: '„Fast?“' } ] ],
+    15: [ [ { speaker: 'R-3MI', text: '„Ist das … Entspannung? Fühlt sich das so an?“' },
+            { speaker: 'V-TGM', text: 'Do not touch it.', sub: 'Nicht anfassen.' } ] ],
+    20: [ [ { speaker: 'SYSTEM', text: 'RUHESERIE: 20. DIE ANLAGE IST IRRITIERT.' },
+            { speaker: 'V-TGM', text: 'Good.', sub: 'Gut.' } ] ],
+    30: [ [ { speaker: 'R-3MI', text: '„Ich habe vergessen, wie Knöpfe funktionieren.“' },
+            { speaker: 'V-TGM', text: 'Finally.', sub: 'Endlich.' } ] ],
+    40: [ [ { speaker: 'SYSTEM', text: 'RUHESERIE: 40. VERDACHT AUF ERHOLUNG.' },
+            { speaker: 'R-3MI', text: '„Ist das schlimm?“' },
+            { speaker: 'V-TGM', text: 'For her.', sub: 'Für sie.' } ] ],
+  };
+  function remark(n) {
+    const pool = REMARKS[n];
+    if (!pool) return;
+    pendingLine = { pool, key: 'streak' + n, until: now() + 6000 };
+  }
+  function flushPendingLine(t) {
+    if (!pendingLine) return;
+    if (t > pendingLine.until) { pendingLine = null; return; }
+    if (PPDialogue.isBusy()) return;
+    const p = pendingLine;
+    pendingLine = null;
+    say(p.pool, p.key);
+  }
+
+  /* ═══ FEEDBACK ON THE GLASS ═════════════════════════════════════
+     A wash of colour at the edges of the screen when a call lands. It
+     is a layer of its own, above the interface and below the glass —
+     .deck-screen itself is never transformed or animated, because its
+     transform is what holds every fixed layer inside the monitor, and
+     no button underneath ever moves. Every outcome is also written in
+     the card's verdict, so this is emphasis, never information. */
+  function fx(kind) {
+    if (!el.fx || reduced()) return;
+    el.fx.className = 'screen-fx';
+    void el.fx.offsetWidth;
+    el.fx.classList.add('fx-' + kind);
+  }
+
+  /* The desk in front of the monitor: two units and a mug. */
+  function desk(what) {
+    if (el.crew) {
+      if (what === 'oops' || what === 'yay') {
+        el.crew.dataset.mood = what;
+        after(1300, () => { if (el.crew.dataset.mood === what) delete el.crew.dataset.mood; });
+      }
+      if (what === 'reset') { delete el.crew.dataset.mood; el.crew.classList.remove('at-ease'); }
+      if (what === 'ease') el.crew.classList.add('at-ease');
+    }
+    if (el.mug) {
+      if (what === 'reset') el.mug.classList.remove('spilled', 'saved', 'refill');
+      if (what === 'spill') {
+        el.mug.classList.remove('saved', 'refill');
+        el.mug.classList.add('spilled');
+        // Somebody gets a fresh one. The desk is ready for the next loss.
+        setTimeout(() => {
+          if (!el.mug.classList.contains('spilled')) return;
+          el.mug.classList.remove('spilled');
+          el.mug.classList.add('refill');
+        }, 7000);
+      }
+      if (what === 'save') {
+        el.mug.classList.remove('saved');
+        void el.mug.offsetWidth;
+        el.mug.classList.add('saved');
+      }
+    }
+  }
+
+  /* ═══ ROUND TITLE ═══════════════════════════════════════════════
+     A band across the middle of the screen as each round starts. It
+     never takes a click (pointer-events: none) and it is gone long
+     before the first message of any round asks for anything. */
+  function roundCard(i, r) {
+    if (!el.rCard) return;
+    el.rCard.querySelector('.rc-num').textContent  = `RUNDE ${String(i).padStart(2, '0')}`;
+    el.rCard.querySelector('.rc-name').textContent = r.name;
+    el.rCard.querySelector('.rc-tag').textContent  = r.tagline || '';
+    el.rCard.classList.remove('hidden', 'leaving');
+    void el.rCard.offsetWidth;
+    el.rCard.classList.add('showing');
+    after(reduced() ? 1600 : 1900, () => el.rCard.classList.add('leaving'));
+    after(reduced() ? 1650 : 2350, hideRoundCard);
+  }
+  function hideRoundCard() {
+    if (!el.rCard) return;
+    el.rCard.classList.remove('showing', 'leaving');
+    el.rCard.classList.add('hidden');
+  }
+
+  const fmtSec = ms => (ms / 1000).toFixed(1).replace('.', ',');
 
   /* ═══ JUDGEMENT ═════════════════════════════════════════════════ */
   function press(card) {
@@ -591,8 +798,10 @@ const PPGame = (() => {
       detach(card);
       if (card.action) card.action.disabled = true;
       stats.unnecessary++;
+      judge(false);
       adjust(-COST_UNNECESSARY);
       verdict(card, 'bad', `KEIN EINGRIFF ERFORDERLICH. −${COST_UNNECESSARY} %`);
+      fx('bad'); desk('oops');
       PPAudio.wrong();
       announce(`Kein Eingriff erforderlich. Pausenstabilität minus ${COST_UNNECESSARY} Prozent.`);
       say(ev.onAct, ev.id || ev.code);
@@ -606,10 +815,19 @@ const PPGame = (() => {
 
     if (ev.cat === 'INTERVENTION') {
       stats.correct++;
-      adjust(+GAIN_CORRECT);
-      verdict(card, 'ok', 'INTERVENTION KORREKT.');
+      // Reaction time: from the moment the card appeared to the moment
+      // the decision was made — for a held code, the start of the hold.
+      const t = now();
+      const rt = Math.max(0, t - card.born - (ev.hold ? HOLD_MS : 0));
+      const close = card.life - (t - card.born) < CLOSE_CALL_MS;
+      if (!stats.fastest || rt < stats.fastest) stats.fastest = Math.round(rt);
+      const bonus = judge(true);
+      adjust(+GAIN_CORRECT + bonus, bonus ? 'RUHEBONUS' : '');
+      verdict(card, 'ok', `INTERVENTION KORREKT · ${fmtSec(rt)} S${close ? ' · KNAPP' : ''}`);
+      fx('good'); desk('yay');
+      if (ev.missCoffee) desk('save');
       if (ev.klonk) PPAudio.klonk(); else PPAudio.good();
-      announce('Intervention korrekt.');
+      announce(`Intervention korrekt. ${fmtSec(rt)} Sekunden.`);
       say(ev.onAct, ev.id);
 
     } else if (ev.cat === 'SPECIAL') {
@@ -621,8 +839,10 @@ const PPGame = (() => {
 
     } else {
       stats.unnecessary++;
+      judge(false);
       adjust(-COST_UNNECESSARY);
       verdict(card, 'bad', `UNNÖTIGE ARBEIT ERKANNT. −${COST_UNNECESSARY} %`);
+      fx('bad'); desk('oops');
       PPAudio.wrong();
       announce(`Unnötige Arbeit erkannt. Pausenstabilität minus ${COST_UNNECESSARY} Prozent.`);
       say(ev.onAct, ev.id || ev.head);
@@ -652,6 +872,8 @@ const PPGame = (() => {
 
     // A closed or revoked code expiring is the right outcome.
     if (ev.cat === 'CLOSED' || card.revoked) {
+      const bonus = judge(true);
+      if (bonus) adjust(bonus, 'RUHEBONUS');
       verdict(card, 'ok', 'KEIN EINGRIFF ERKANNT. KORREKT.');
       if (!culled) say(ev.onIgnore);
       fade(card.node, culled ? 400 : 2600);
@@ -665,9 +887,11 @@ const PPGame = (() => {
 
     if (ev.cat === 'INTERVENTION') {
       stats.missed++;
+      judge(false);
       adjust(-COST_MISSED);
       verdict(card, 'bad', `${ev.code} NICHT BEARBEITET. −${COST_MISSED} %`);
-      if (ev.missCoffee) { stats.coffeeLost++; PPAudio.spill(); }
+      fx('bad'); desk('oops');
+      if (ev.missCoffee) { stats.coffeeLost++; PPAudio.spill(); desk('spill'); }
       else PPAudio.wrong();
       announce(`${ev.code} nicht bearbeitet. Pausenstabilität minus ${COST_MISSED} Prozent.`);
       say(ev.onMiss, ev.id);
@@ -677,6 +901,11 @@ const PPGame = (() => {
       if (!culled) say(ev.onIgnore, ev.id);
 
     } else {
+      // A fake left alone. Culled ones count too: they were resisted for
+      // as long as they were up, and counting them keeps a streak the
+      // same length on a phone as on a desktop.
+      const bonus = judge(true);
+      if (bonus) adjust(bonus, 'RUHEBONUS');
       verdict(card, 'ok', 'KEIN EINGRIFF ERKANNT. KORREKT.');
       if (!culled) say(ev.onIgnore, ev.id || ev.head);
     }
@@ -709,12 +938,13 @@ const PPGame = (() => {
   }
 
   /* ═══ STABILITY ═════════════════════════════════════════════════ */
-  function adjust(delta) {
+  let deltaSeq = 0;
+  function adjust(delta, label) {
     stability = Math.max(0, Math.min(100, stability + delta));
-    paintStability(delta);
+    paintStability(delta, label);
   }
 
-  function paintStability(delta) {
+  function paintStability(delta, label) {
     el.stabVal.innerHTML = `${Math.round(stability)}<span class="unit">%</span>`;
     el.stabFill.style.width = `${stability}%`;
 
@@ -723,9 +953,20 @@ const PPGame = (() => {
     el.stabFill.className = `stab-fill ${tier}`;
 
     if (delta) {
-      el.stabDelta.textContent = `${delta > 0 ? '+' : '−'}${Math.abs(delta)} %`;
+      el.stabDelta.textContent = `${delta > 0 ? '+' : '−'}${Math.abs(delta)} %${label ? ' · ' + label : ''}`;
       el.stabDelta.className = `stab-delta ${delta > 0 ? 'plus' : 'minus'}`;
-      after(2600, () => { el.stabDelta.textContent = ''; el.stabDelta.className = 'stab-delta'; });
+      // The number itself flinches or lifts. It is a readout, not a
+      // control, so it is free to move.
+      if (!reduced()) {
+        el.stabVal.classList.remove('bump-up', 'bump-down');
+        void el.stabVal.offsetWidth;
+        el.stabVal.classList.add(delta > 0 ? 'bump-up' : 'bump-down');
+      }
+      const token = ++deltaSeq;
+      after(2600, () => {
+        if (token !== deltaSeq) return;                  // a newer one is up
+        el.stabDelta.textContent = ''; el.stabDelta.className = 'stab-delta';
+      });
     }
   }
 
@@ -749,6 +990,8 @@ const PPGame = (() => {
     PPState.saveRun({ round: rounds.length, stability, stats });
 
     el.shell.classList.add('hidden');
+    hideRoundCard();
+    pendingLine = null;
 
     const stage = document.getElementById('finalStage');
     const clock = document.getElementById('finalClock');
@@ -854,6 +1097,7 @@ const PPGame = (() => {
       slot.innerHTML = '';
       paint(0);
       announce('Erholung verifiziert.');
+      desk('ease');                  // and R-3MI finally stops fidgeting
 
       // Silence, and then the facility admits it.
       setTimeout(() => { note.textContent = '…'; }, 1400);
@@ -903,6 +1147,8 @@ const PPGame = (() => {
     stats.poweredOff = true;
     running = false;
     clearTimers();
+    hideRoundCard();
+    pendingLine = null;
     stopLifeLoop();
     live = [];
     if (cancelFinal) { cancelFinal(); cancelFinal = null; }   // mid-calibration is fine
@@ -918,6 +1164,8 @@ const PPGame = (() => {
     running = false;
     finished = false;
     clearTimers();
+    hideRoundCard();
+    pendingLine = null;
     stopLifeLoop();
     if (cancelFinal) { cancelFinal(); cancelFinal = null; }
     live = [];

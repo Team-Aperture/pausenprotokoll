@@ -57,7 +57,8 @@ const PPResults = (() => {
   ];
 
   /* ─── AWARDS ──────────────────────────────────────────────────
-     Five, deliberately. This is a spin-off, not an achievement list. */
+     A handful, deliberately. This is a spin-off, not an achievement
+     list. */
   const AWARDS = [
     { id: 'prof',   name: 'PROFESSIONELLER NICHTSTUER', desc: 'RANG A+ ERREICHT.',
       test: (s, st, rank) => rank.id === 'Aplus' },
@@ -70,6 +71,10 @@ const PPResults = (() => {
       test: (s, st) => !st.poweredOff && st.finalResets === 0 },
     { id: 'mitarb', name: 'MITARBEITER DES MONATS',     desc: 'NAHEZU JEDE UNNÖTIGE MASSNAHME ERGRIFFEN. PAUSENBEWERTUNG: KATASTROPHAL.',
       test: (s, st) => st.fakesOffered > 0 && st.unnecessary >= Math.max(6, Math.ceil(st.fakesOffered * 0.7)) },
+    // A perfect run makes 45 calls; this asks for more than half of them
+    // without a single slip in between.
+    { id: 'ruhe',   name: 'UNERSCHÜTTERLICH',           desc: 'RUHESERIE VON 25 ODER MEHR.',
+      test: (s, st) => !st.poweredOff && (st.bestStreak || 0) >= 25 },
     { id: 'drang',  name: 'D-RANG',                     desc: 'DIE PRESTIGETRÄCHTIGE R-3MI-BEWERTUNG.',
       test: (s, st, rank) => rank.id === 'D' },
     // `hint` is what the list shows before it has been earned. This one
@@ -104,41 +109,53 @@ const PPResults = (() => {
     document.getElementById('ending').classList.toggle('in-room', !!stats.poweredOff);
     const tier = stability >= 70 ? '' : stability >= 40 ? 'mid' : 'low';
 
+    const fastest = stats.fastest
+      ? `${(stats.fastest / 1000).toFixed(1).replace('.', ',')} S` : '—';
+
+    // Numbers are written into the page as their FINAL values and only
+    // then animated up from zero (see presentVerdict), so a screen reader
+    // or a player with motion switched off gets the real figure at once.
     card.innerHTML = `
-      <div class="res-head">PAUSENPROTOKOLL ABGESCHLOSSEN</div>
-      <h2 class="res-title">AUSWERTUNG</h2>
+      <div class="res-col res-col-a">
+        <div class="res-head">PAUSENPROTOKOLL ABGESCHLOSSEN</div>
+        <h2 class="res-title">AUSWERTUNG</h2>
 
-      <div>
-        <div class="res-head">PAUSENSTABILITÄT</div>
-        <div class="res-stab ${tier}">${stability}<span class="unit">%</span></div>
-      </div>
-
-      <dl class="res-stats">
-        <dt>Unnötige Eingriffe</dt><dd>${stats.unnecessary}</dd>
-        <dt>Korrekte Interventionen</dt><dd>${stats.correct}</dd>
-        <dt>Verpasste Interventionen</dt><dd>${stats.missed}</dd>
-        <dt>Kaffeeverluste</dt><dd>${stats.coffeeLost}</dd>
-        <dt>Zurücksetzungen im Finale</dt><dd>${stats.finalResets}</dd>
-      </dl>
-
-      <div class="res-rank" style="--rank-color:${rank.color}">
-        <div class="res-head">BEWERTUNG</div>
-        <div class="res-rank-letter">${rank.letter}</div>
-        <div class="res-rank-name">${rank.name}</div>
-        <p class="res-rank-note">${rank.note}</p>
-      </div>
-
-      ${earned.length ? `
-      <div>
-        <div class="res-head">SONDERAUSZEICHNUNGEN</div>
-        <div class="res-awards">
-          ${earned.map(a => `
-            <div class="res-award">
-              <span class="res-award-name">${a.name}</span>
-              <span class="res-award-desc">${a.desc}</span>
-            </div>`).join('')}
+        <div>
+          <div class="res-head">PAUSENSTABILITÄT</div>
+          <div class="res-stab ${tier}"><span data-count="${stability}">${stability}</span><span class="unit">%</span></div>
         </div>
-      </div>` : ''}
+
+        <dl class="res-stats">
+          <dt>Unnötige Eingriffe</dt><dd data-count="${stats.unnecessary}">${stats.unnecessary}</dd>
+          <dt>Korrekte Interventionen</dt><dd data-count="${stats.correct}">${stats.correct}</dd>
+          <dt>Verpasste Interventionen</dt><dd data-count="${stats.missed}">${stats.missed}</dd>
+          <dt>Kaffeeverluste</dt><dd data-count="${stats.coffeeLost}">${stats.coffeeLost}</dd>
+          <dt>Längste Ruheserie</dt><dd data-count="${stats.bestStreak || 0}">${stats.bestStreak || 0}</dd>
+          <dt>Schnellste Reaktion</dt><dd>${fastest}</dd>
+          <dt>Zurücksetzungen im Finale</dt><dd data-count="${stats.finalResets}">${stats.finalResets}</dd>
+        </dl>
+      </div>
+
+      <div class="res-col res-col-b">
+        <div class="res-rank" style="--rank-color:${rank.color}">
+          <div class="res-head">BEWERTUNG</div>
+          <div class="res-rank-letter" id="resRankLetter">${rank.letter}</div>
+          <div class="res-rank-name">${rank.name}</div>
+          <p class="res-rank-note">${rank.note}</p>
+        </div>
+
+        ${earned.length ? `
+        <div>
+          <div class="res-head">SONDERAUSZEICHNUNGEN</div>
+          <div class="res-awards">
+            ${earned.map(a => `
+              <div class="res-award">
+                <span class="res-award-name">${a.name}</span>
+                <span class="res-award-desc">${a.desc}</span>
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
+      </div>
 
       <div class="res-actions">
         <button class="ka-btn primary" id="resContinue" type="button">[ WEITER ]</button>
@@ -152,6 +169,9 @@ const PPResults = (() => {
     PPMusic.hush(false, 2.0);
     PPMusic.setMuffled(true, 1.8);
     document.getElementById('resContinue').addEventListener('click', () => {
+      // A stamp still due would otherwise land in the middle of the ending.
+      verdictTimers.forEach(clearTimeout);
+      verdictTimers = [];
       view.classList.add('hidden');
       ending(stats, rank);
     });
@@ -160,7 +180,7 @@ const PPResults = (() => {
     // on a button that no longer exists.
     setTimeout(() => document.getElementById('resContinue')?.focus(), 60);
 
-    PPAudio.award();
+    presentVerdict(card);
 
     // The two lines the D rank exists for.
     const lines = [];
@@ -179,7 +199,66 @@ const PPResults = (() => {
       lines.push({ speaker: 'V-TGM', text: 'That is not a compliment.', sub: 'Das ist kein Kompliment.' });
       lines.push({ speaker: 'R-3MI', text: '„Ich nehme sie trotzdem.“' });
     }
+    if (earned.some(a => a.id === 'ruhe') && rank.id !== 'Aplus') {
+      lines.push({ speaker: 'R-3MI', text: '„Ich war die ganze Zeit sehr erschütterlich. Innen drin.“' });
+      lines.push({ speaker: 'V-TGM', text: 'Nobody could tell.', sub: 'Man hat es nicht gemerkt.' });
+    }
     if (lines.length) setTimeout(() => PPDialogue.say(lines, { auto: true }), 1200);
+  }
+
+  /* ═══ THE VERDICT, DELIVERED ════════════════════════════════════
+     The figures count up, then the rank letter is stamped onto the
+     sheet. Nothing here is a control: the only button on the sheet
+     ([ WEITER ]) is in place and usable from the first frame, and the
+     animation never touches it. */
+  let verdictTimers = [];
+  function presentVerdict(card) {
+    verdictTimers.forEach(clearTimeout);
+    verdictTimers = [];
+    const letter = card.querySelector('.res-rank-letter');
+    const still = (() => {
+      try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+      catch (_) { return false; }
+    })();
+    if (still) { PPAudio.award(); return; }
+
+    // The count runs in an aria-hidden copy; the real figure sits beside
+    // it, visually hidden, so a screen reader never hears the numbers
+    // on their way up. Once the count lands, the plain value is put
+    // back and the scaffolding goes.
+    const nums = [...card.querySelectorAll('[data-count]')];
+    const COUNT_MS = 700;
+    nums.forEach((n, k) => {
+      const target = Number(n.dataset.count) || 0;
+      n.innerHTML = `<span class="visually-hidden">${target}</span><span aria-hidden="true">0</span>`;
+      const shown = n.lastChild;
+      const begin = 250 + k * 110;
+      verdictTimers.push(setTimeout(() => {
+        const t0 = performance.now();
+        const step = () => {
+          if (!n.isConnected) return;
+          const p = Math.min(1, (performance.now() - t0) / COUNT_MS);
+          const eased = 1 - Math.pow(1 - p, 3);
+          shown.textContent = String(Math.round(target * eased));
+          if (p < 1) requestAnimationFrame(step);
+          else n.textContent = String(target);
+        };
+        requestAnimationFrame(step);
+      }, begin));
+    });
+
+    if (letter) {
+      letter.classList.add('pre-stamp');
+      const at = 250 + nums.length * 110 + COUNT_MS + 150;
+      verdictTimers.push(setTimeout(() => {
+        letter.classList.remove('pre-stamp');
+        letter.classList.add('stamped');
+        try { PPAudio.stamp(); } catch (_) {}
+      }, at));
+      verdictTimers.push(setTimeout(() => { try { PPAudio.award(); } catch (_) {} }, at + 380));
+    } else {
+      PPAudio.award();
+    }
   }
 
   /* ═══ ENDING ════════════════════════════════════════════════════ */
@@ -216,7 +295,7 @@ const PPResults = (() => {
         { speaker: 'R-3MI', text: '„Du hast ihn ausgeschaltet.“' },
         { speaker: 'V-TGM', text: 'I did.', sub: 'Habe ich.' },
         { speaker: 'R-3MI', text: '„Das durfte man?“' },
-        { speaker: 'V-TGM', text: 'It is a break, Remi. Nobody has to reach us.', sub: 'Es ist eine Pause, Remi. Niemand muss uns erreichen.' },
+        { speaker: 'V-TGM', text: 'It is a break, R-3MI. Nobody has to reach us.', sub: 'Es ist eine Pause, R-3MI. Niemand muss uns erreichen.' },
         // A pause, not a quotation. R-3MI has stopped talking.
         { speaker: 'R-3MI', text: '…' },
         { speaker: 'R-3MI', text: '„Ich sitze einfach mal hier.“' },
